@@ -45,8 +45,9 @@ export async function holeKurse(tageVoraus: number = 7, startTag: number = 1): P
   
   const fromStr = fromDatum.toISOString().split('T')[0]
   const toStr = toDatum.toISOString().split('T')[0]
-  // Always use +01:00 for Germany timezone (Injoy Wolfsburg is in Germany)
-  const timezone = '+01:00'
+  // Use ISO string without Z + timezone offset for API
+  const isoString = heute.toISOString().split('T')[0] + 'T12:00:00'
+  const timezone = isoString + '+01:00'
   
   const url = `${CONFIG.API_BASE_URL}/centers/${CONFIG.CENTER_ID}/hybrid_courseplan?from=${fromStr}T00:01:00Z&to=${toStr}T22:59:59Z&timezone=${encodeURIComponent(timezone)}`
   
