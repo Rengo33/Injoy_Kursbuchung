@@ -88,13 +88,15 @@ function erstelleUebersicht(kurse: RawCourse[]): Kurs[] {
     const verfuegbar = Math.max(0, kapazitaet - gebucht)
     
     const dateObj = new Date(startTime)
+    // Add 1 hour to convert from UTC to GMT+1 (Germany timezone)
+    const berlinDate = new Date(dateObj.getTime() + 60 * 60 * 1000)
     
     overview.push({
       id: course.id,
       name,
-      datum: dateObj.toLocaleDateString('de-DE'),
-      wochentag: getWochentag(dateObj),
-      uhrzeit: dateObj.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
+      datum: berlinDate.toLocaleDateString('de-DE'),
+      wochentag: getWochentag(berlinDate),
+      uhrzeit: berlinDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
       trainer,
       raum,
       kapazitaet,
