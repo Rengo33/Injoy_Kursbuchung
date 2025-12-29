@@ -45,7 +45,14 @@ export async function holeKurse(tageVoraus: number = 7, startTag: number = 1): P
   
   const fromStr = fromDatum.toISOString().split('T')[0]
   const toStr = toDatum.toISOString().split('T')[0]
-  const timezone = heute.toISOString().replace('Z', '') + '+01:00'
+  
+  // Calculate timezone offset dynamically
+  const offset = -heute.getTimezoneOffset()
+  const sign = offset >= 0 ? '+' : '-'
+  const hours = Math.abs(Math.floor(offset / 60))
+  const minutes = Math.abs(offset % 60)
+  const timezoneOffset = `${sign}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+  const timezone = heute.toISOString().replace('Z', '') + timezoneOffset
   
   const url = `${CONFIG.API_BASE_URL}/centers/${CONFIG.CENTER_ID}/hybrid_courseplan?from=${fromStr}T00:01:00Z&to=${toStr}T22:59:59Z&timezone=${encodeURIComponent(timezone)}`
   
