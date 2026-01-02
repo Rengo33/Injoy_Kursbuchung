@@ -54,7 +54,7 @@ export async function POST(request: Request) {
 
       return NextResponse.json({ 
         success: true, 
-        message: `Buchung wurde für den ${formattedTime} geplant (1 Tag und 3s vor Beginn).`,
+        message: `Buchung wurde für den ${formattedTime} geplant (1 Tag und 2s vor Beginn).`,
         scheduled: true,
         targetTime: targetZeit.toISOString()
       })

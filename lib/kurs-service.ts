@@ -123,12 +123,12 @@ export interface BuchungsData {
 
 /**
  * Berechnet den Zielzeitpunkt für die Buchung:
- * Kursbeginn - 1 Tag - 3 Sekunden
+ * Kursbeginn - 1 Tag - 2 Sekunden
  */
 export function berechneTargetZeitpunkt(courseDate: string): Date {
   const kursStart = new Date(courseDate)
-  // 1 Tag = 86400 Sekunden. + 3 Sekunden = 86403 Sekunden vor Beginn.
-  const targetMillis = kursStart.getTime() - (86403 * 1000)
+  // 1 Tag = 86400 Sekunden. + 2 Sekunden = 86402 Sekunden vor Beginn.
+  const targetMillis = kursStart.getTime() - (86402 * 1000)
   return new Date(targetMillis)
 }
 
