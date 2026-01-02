@@ -170,7 +170,7 @@ export default function Home() {
             </div>
           ) : error ? (
             <div className="status error">
-              <p>❌ {error}</p>
+              <p>Fehler: {error}</p>
             </div>
           ) : kurse.length === 0 ? (
             <div className="status">
@@ -186,8 +186,8 @@ export default function Home() {
                     <div className="kurs-info">
                       <div className="kurs-name">{kurs.name}</div>
                       <div className="kurs-details">
-                        {kurs.trainer && <span>👤 {kurs.trainer}</span>}
-                        {kurs.raum && <span>📍 {kurs.raum}</span>}
+                        {kurs.trainer && <span>Trainer: {kurs.trainer}</span>}
+                        {kurs.raum && <span>Raum: {kurs.raum}</span>}
                       </div>
                     </div>
                     <div className="kurs-stats">
@@ -198,7 +198,7 @@ export default function Home() {
                         </div>
                       )}
                       {kurs.warteliste > 0 && (
-                        <div className="kurs-warteliste">⏳ {kurs.warteliste} auf Warteliste</div>
+                        <div className="kurs-warteliste">{kurs.warteliste} auf Warteliste</div>
                       )}
                     </div>
                     <button 
@@ -216,7 +216,7 @@ export default function Home() {
       </div>
 
       <footer>
-        <p>💜 Mit Liebe erstellt</p>
+        <p>Mit Liebe erstellt</p>
       </footer>
 
       {/* Buchungs Modal */}
@@ -224,12 +224,12 @@ export default function Home() {
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && schliesseBuchung()}>
           <div className="modal">
             <div className="modal-header">
-              <h2>🎫 Kurs buchen</h2>
+              <h2>Kurs buchen</h2>
             </div>
             
             <div className="modal-kurs-info">
               <strong>{modal.kurs.name}</strong>
-              <p>📅 {modal.kurs.wochentag}, {modal.kurs.datum} um {modal.kurs.uhrzeit}</p>
+              <p>{modal.kurs.wochentag}, {modal.kurs.datum} um {modal.kurs.uhrzeit}</p>
               
               {(() => {
                 const target = berechneTargetZeitpunkt(modal.kurs.course_date)
@@ -237,7 +237,7 @@ export default function Home() {
                 if (target > jetzt) {
                   return (
                     <p className="info-geplant">
-                      🕒 Automatisierte Buchung am: <strong>{target.toLocaleString('de-DE')}</strong>
+                      Automatisierte Buchung am: <strong>{target.toLocaleString('de-DE')}</strong>
                     </p>
                   )
                 }
@@ -245,7 +245,7 @@ export default function Home() {
               })()}
 
               {modal.istWarteliste && (
-                <p className="warnung">⚠️ Dieser Kurs ist voll – du wirst auf die Warteliste gesetzt</p>
+                <p className="warnung">Dieser Kurs ist voll – du wirst auf die Warteliste gesetzt</p>
               )}
             </div>
             
@@ -312,7 +312,7 @@ export default function Home() {
                 
                 {buchungStatus && (
                   <div className={`nachricht ${buchungStatus.type}`}>
-                    {buchungStatus.type === 'erfolg' ? '✅' : '❌'} {buchungStatus.message}
+                    {buchungStatus.message}
                   </div>
                 )}
               </div>
@@ -326,7 +326,7 @@ export default function Home() {
                   className={`btn ${modal.istWarteliste ? 'btn-warning' : 'btn-success'}`}
                   disabled={buchungLoading}
                 >
-                  {buchungLoading ? 'Wird gebucht...' : modal.istWarteliste ? '📋 Auf Warteliste' : '✅ Jetzt buchen'}
+                  {buchungLoading ? 'Wird gebucht...' : modal.istWarteliste ? 'Auf Warteliste' : 'Jetzt buchen'}
                 </button>
               </div>
             </form>
