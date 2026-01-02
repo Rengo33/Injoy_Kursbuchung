@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Kurs, berechneTargetZeitpunkt } from '@/lib/kurs-service'
 
 interface BuchungsModal {
@@ -27,7 +27,7 @@ export default function Home() {
   const [buchungStatus, setBuchungStatus] = useState<{ type: 'erfolg' | 'fehler'; message: string } | null>(null)
   const [buchungLoading, setBuchungLoading] = useState(false)
 
-  const ladeKurse = async () => {
+  const ladeKurse = useCallback(async () => {
     setLoading(true)
     setError(null)
     
@@ -46,11 +46,11 @@ export default function Home() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [tage, start])
 
   useEffect(() => {
     ladeKurse()
-  }, [])
+  }, [ladeKurse])
 
   const gruppiereKurse = () => {
     const gruppiert: Record<string, Kurs[]> = {}

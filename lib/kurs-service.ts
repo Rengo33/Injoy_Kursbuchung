@@ -88,8 +88,8 @@ function erstelleUebersicht(kurse: RawCourse[]): Kurs[] {
     const verfuegbar = Math.max(0, kapazitaet - gebucht)
     
     const dateObj = new Date(startTime)
-    // Add 1 hour to convert from UTC to GMT+1 (Germany timezone)
-    const berlinDate = new Date(dateObj.getTime() + 60 * 60 * 1000)
+    // Use proper timezone conversion (handles DST automatically)
+    const berlinDate = new Date(dateObj.toLocaleString('en-US', { timeZone: 'Europe/Berlin' }))
     
     overview.push({
       id: course.id,

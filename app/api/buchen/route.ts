@@ -16,6 +16,15 @@ export async function POST(request: Request) {
       }
     }
 
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(data.email)) {
+      return NextResponse.json(
+        { success: false, error: 'Ungültige E-Mail-Adresse' },
+        { status: 400 }
+      )
+    }
+
     const targetZeit = berechneTargetZeitpunkt(data.course_date)
     const jetzt = new Date()
     const diffMs = targetZeit.getTime() - jetzt.getTime()
