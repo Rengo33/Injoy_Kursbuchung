@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Kurs } from '@/lib/kurs-service'
+import { Kurs, berechneTargetZeitpunkt } from '@/lib/kurs-service'
 
 interface BuchungsModal {
   isOpen: boolean
@@ -103,10 +103,12 @@ export default function Home() {
       
       if (data.success) {
         setBuchungStatus({ type: 'erfolg', message: data.message })
+        // Wenn geplant, lassen wir das Modal 5 Sekunden offen, damit man die Zeit lesen kann
+        const delay = data.scheduled ? 5000 : 2000
         setTimeout(() => {
           schliesseBuchung()
           ladeKurse()
-        }, 2000)
+        }, delay)
       } else {
         setBuchungStatus({ type: 'fehler', message: data.message || data.error })
       }
@@ -228,6 +230,20 @@ export default function Home() {
             <div className="modal-kurs-info">
               <strong>{modal.kurs.name}</strong>
               <p>📅 {modal.kurs.wochentag}, {modal.kurs.datum} um {modal.kurs.uhrzeit}</p>
+              
+              {(() => {
+                const target = berechneTargetZeitpunkt(modal.kurs.course_date)
+                const jetzt = new Date()
+                if (target > jetzt) {
+                  return (
+                    <p className="info-geplant">
+                      🕒 Automatisierte Buchung am: <strong>{target.toLocaleString('de-DE')}</strong>
+                    </p>
+                  )
+                }
+                return null
+              })()}
+
               {modal.istWarteliste && (
                 <p className="warnung">⚠️ Dieser Kurs ist voll – du wirst auf die Warteliste gesetzt</p>
               )}
