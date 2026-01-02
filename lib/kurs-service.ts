@@ -122,21 +122,15 @@ export interface BuchungsData {
 }
 
 /**
- * TEST-MODUS: Berechnet den Zielzeitpunkt für die Buchung auf 1 Minute in der Zukunft,
- * um das Scheduling zu testen.
+ * Berechnet den Zielzeitpunkt für die Buchung:
+ * Kursbeginn - 1 Tag - 3 Sekunden
  */
 export function berechneTargetZeitpunkt(courseDate: string): Date {
-  // Für den Test: Jetzt + 60 Sekunden
-  return new Date(Date.now() + 60 * 1000)
-}
-
-/* Original-Logik für später:
-export function berechneTargetZeitpunkt(courseDate: string): Date {
   const kursStart = new Date(courseDate)
+  // 1 Tag = 86400 Sekunden. + 3 Sekunden = 86403 Sekunden vor Beginn.
   const targetMillis = kursStart.getTime() - (86403 * 1000)
   return new Date(targetMillis)
 }
-*/
 
 export async function bucheKurs(data: BuchungsData): Promise<{ success: boolean; message: string }> {
   const headers = {

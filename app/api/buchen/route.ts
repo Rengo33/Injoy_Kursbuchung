@@ -42,9 +42,19 @@ export async function POST(request: Request) {
         throw new Error(`QStash Error: ${response.status} - ${errorText}`)
       }
 
+      const formattedTime = targetZeit.toLocaleString('de-DE', {
+        timeZone: 'Europe/Berlin',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      })
+
       return NextResponse.json({ 
         success: true, 
-        message: `Buchung wurde für den ${targetZeit.toLocaleString('de-DE')} geplant (1 Tag und 3s vor Beginn).`,
+        message: `Buchung wurde für den ${formattedTime} geplant (1 Tag und 3s vor Beginn).`,
         scheduled: true,
         targetTime: targetZeit.toISOString()
       })
