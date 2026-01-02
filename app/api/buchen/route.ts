@@ -32,7 +32,7 @@ export async function POST(request: Request) {
           'Authorization': `Bearer ${process.env.QSTASH_TOKEN}`,
           'Content-Type': 'application/json',
           'Upstash-Delay': `${Math.floor(diffMs / 1000)}s`,
-          'x-scheduler-secret': process.env.SCHEDULER_SECRET || ''
+          'Upstash-Forward-x-scheduler-secret': process.env.SCHEDULER_SECRET || ''
         },
         body: JSON.stringify(data)
       })
