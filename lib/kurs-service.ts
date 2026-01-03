@@ -123,15 +123,28 @@ export interface BuchungsData {
 
 /**
  * Berechnet den Zielzeitpunkt für die Buchung:
- * - TEST_MODE: 1 Minute in der Zukunft (zum Testen)
+ * - TEST_MODE: Nächste 2-Minuten-Marke (um mehrere gleichzeitige Anfragen zu testen)
  * - NORMAL: Kursbeginn - 1 Tag - 2 Sekunden
  */
 export function berechneTargetZeitpunkt(courseDate: string): Date {
   const jetzt = new Date()
   
-  // Im Testmodus: Zeitpunkt auf 1 Minute in der Zukunft setzen
+  // Im Testmodus: Nächste 2-Minuten-Marke berechnen
   if (CONFIG.TEST_MODE) {
-    const targetMillis = jetzt.getTime() + (60 * 1000) // 1 Minute
+    const minuten = jetzt.getMinutes()
+    const sekunden = jetzt.getSeconds()
+    const millisekunden = jetzt.getMilliseconds()
+    
+    // Berechne wie viele Minuten bis zur nächsten geraden 2er-Marke (0, 2, 4, 6, ...)
+    const minutenBisNaechsteMark = (2 - (minuten % 2)) % 2
+    let minutenBisZiel = minutenBisNaechsteMark === 0 ? 2 : minutenBisNaechsteMark
+    
+    // Wenn wir bereits auf einer 2er-Marke sind und keine Sekunden/Millisekunden mehr haben
+    if (minutenBisNaechsteMark === 0 && (sekunden > 0 || millisekunden > 0)) {
+      minutenBisZiel = 2
+    }
+    
+    const targetMillis = jetzt.getTime() + (minutenBisZiel * 60 * 1000) - (sekunden * 1000) - millisekunden
     return new Date(targetMillis)
   }
   
