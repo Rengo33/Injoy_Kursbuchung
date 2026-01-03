@@ -5,7 +5,7 @@ import { bucheKurs, BuchungsData } from '@/lib/kurs-service'
 export async function POST(request: Request) {
   try {
     // Zufällige Verzögerung (Jitter) hinzufügen, um API-Kollisionen zu vermeiden
-    const jitterMs = Math.floor(Math.random() * (300 - 50 + 1)) + 50 // 50-300ms
+    const jitterMs = Math.floor(Math.random() * 301) // 0-300ms
     console.log(`⏱️ Jitter: ${jitterMs}ms`)
     await new Promise(resolve => setTimeout(resolve, jitterMs))
     
