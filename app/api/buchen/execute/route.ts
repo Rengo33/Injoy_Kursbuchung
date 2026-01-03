@@ -4,6 +4,11 @@ import { bucheKurs, BuchungsData } from '@/lib/kurs-service'
 // Dieser Endpoint wird vom Scheduler (z.B. QStash) aufgerufen
 export async function POST(request: Request) {
   try {
+    // Zufällige Verzögerung (Jitter) hinzufügen, um API-Kollisionen zu vermeiden
+    const jitterMs = Math.floor(Math.random() * (300 - 50 + 1)) + 50 // 50-300ms
+    console.log(`⏱️ Jitter: ${jitterMs}ms`)
+    await new Promise(resolve => setTimeout(resolve, jitterMs))
+    
     // Sicherheitscheck: Akzeptiert den direkten oder den von QStash weitergeleiteten Header
     const authHeader = request.headers.get('x-scheduler-secret') || request.headers.get('upstash-forward-x-scheduler-secret')
     
