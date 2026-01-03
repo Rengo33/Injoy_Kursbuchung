@@ -6,4 +6,5 @@ export const CONFIG = {
   BOOKING_AUTH_TOKEN: process.env.BOOKING_AUTH_TOKEN || '',
   CENTER_ID: parseInt(process.env.CENTER_ID || '27'),
   DOMAIN: process.env.DOMAIN || 'https://www.injoy-wolfsburg.de',
+  TEST_MODE: true, // Schedule bookings 1 minute ahead for testing
 }
