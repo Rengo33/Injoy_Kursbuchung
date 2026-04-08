@@ -45,9 +45,13 @@ export async function holeKurse(tageVoraus: number = 7, startTag: number = 1): P
   
   const fromStr = fromDatum.toISOString().split('T')[0]
   const toStr = toDatum.toISOString().split('T')[0]
-  // Use ISO string without Z + timezone offset for API
+  // Dynamically determine Berlin timezone offset (CET +01:00 or CEST +02:00)
+  const utcRef = new Date(heute.toLocaleString('en-US', { timeZone: 'UTC' }))
+  const berlinRef = new Date(heute.toLocaleString('en-US', { timeZone: 'Europe/Berlin' }))
+  const offsetHours = Math.round((berlinRef.getTime() - utcRef.getTime()) / (1000 * 60 * 60))
+  const offsetStr = `+${String(offsetHours).padStart(2, '0')}:00`
   const isoString = heute.toISOString().split('T')[0] + 'T12:00:00'
-  const timezone = isoString + '+01:00'
+  const timezone = isoString + offsetStr
   
   const url = `${CONFIG.API_BASE_URL}/centers/${CONFIG.CENTER_ID}/hybrid_courseplan?from=${fromStr}T00:01:00Z&to=${toStr}T22:59:59Z&timezone=${encodeURIComponent(timezone)}`
   
