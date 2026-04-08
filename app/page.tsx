@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Kurs, berechneTargetZeitpunkt } from '@/lib/kurs-service'
 
 interface BuchungsModal {
@@ -9,13 +9,43 @@ interface BuchungsModal {
   istWarteliste: boolean
 }
 
+interface DatumEintrag {
+  datumStr: string
+  wochentagKurz: string
+  tagMonat: string
+  istHeute: boolean
+}
+
+const WOCHENTAGE_KURZ = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
+
+function erzeugeDatumLeiste(anzahlTage: number = 14): DatumEintrag[] {
+  const heute = new Date()
+  const eintraege: DatumEintrag[] = []
+
+  for (let i = 0; i < anzahlTage; i++) {
+    const d = new Date(heute)
+    d.setDate(heute.getDate() + i)
+
+    eintraege.push({
+      datumStr: d.toLocaleDateString('de-DE'),
+      wochentagKurz: WOCHENTAGE_KURZ[d.getDay()],
+      tagMonat: d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }),
+      istHeute: i === 0,
+    })
+  }
+
+  return eintraege
+}
+
 export default function Home() {
   const [kurse, setKurse] = useState<Kurs[]>([])
-  const [anzahl, setAnzahl] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [tage, setTage] = useState('7')
-  const [start, setStart] = useState('1')
+  const [selectedDate, setSelectedDate] = useState<string | null>(() => {
+    const morgen = new Date()
+    morgen.setDate(morgen.getDate() + 1)
+    return morgen.toLocaleDateString('de-DE')
+  })
   const [modal, setModal] = useState<BuchungsModal>({ isOpen: false, kurs: null, istWarteliste: false })
   const [formData, setFormData] = useState({
     vorname: '',
@@ -27,26 +57,40 @@ export default function Home() {
   const [buchungStatus, setBuchungStatus] = useState<{ type: 'erfolg' | 'fehler'; message: string } | null>(null)
   const [buchungLoading, setBuchungLoading] = useState(false)
 
+  const datumLeiste = useMemo(() => erzeugeDatumLeiste(), [])
+
+  const kursAnzahlProDatum = useMemo(() => {
+    const map = new Map<string, number>()
+    kurse.forEach(k => {
+      map.set(k.datum, (map.get(k.datum) || 0) + 1)
+    })
+    return map
+  }, [kurse])
+
+  const gefilterteKurse = useMemo(
+    () => selectedDate === null ? kurse : kurse.filter(k => k.datum === selectedDate),
+    [kurse, selectedDate]
+  )
+
   const ladeKurse = useCallback(async () => {
     setLoading(true)
     setError(null)
-    
+
     try {
-      const response = await fetch(`/api/kurse?tage=${tage}&start=${start}`)
+      const response = await fetch('/api/kurse?tage=14&start=0')
       const data = await response.json()
-      
+
       if (!data.success) {
         throw new Error(data.error || 'Fehler beim Laden')
       }
-      
+
       setKurse(data.kurse)
-      setAnzahl(data.anzahl)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unbekannter Fehler')
     } finally {
       setLoading(false)
     }
-  }, [tage, start])
+  }, [])
 
   useEffect(() => {
     ladeKurse()
@@ -54,15 +98,15 @@ export default function Home() {
 
   const gruppiereKurse = () => {
     const gruppiert: Record<string, Kurs[]> = {}
-    
-    kurse.forEach(kurs => {
+
+    gefilterteKurse.forEach(kurs => {
       const key = `${kurs.wochentag}, ${kurs.datum}`
       if (!gruppiert[key]) {
         gruppiert[key] = []
       }
       gruppiert[key].push(kurs)
     })
-    
+
     return gruppiert
   }
 
@@ -128,38 +172,45 @@ export default function Home() {
         <p>Finde und buche deinen nächsten Kurs</p>
       </header>
 
-      <div className="controls">
-        <h2>Einstellungen</h2>
-        <div className="control-row">
-          <div className="control-group">
-            <label htmlFor="start">Zeitraum ab</label>
-            <select id="start" value={start} onChange={e => setStart(e.target.value)}>
-              <option value="0">Heute</option>
-              <option value="1">Morgen</option>
-              <option value="2">Übermorgen</option>
-            </select>
-          </div>
-          <div className="control-group">
-            <label htmlFor="tage">Anzahl Tage</label>
-            <select id="tage" value={tage} onChange={e => setTage(e.target.value)}>
-              <option value="3">3 Tage</option>
-              <option value="7">1 Woche</option>
-              <option value="14">2 Wochen</option>
-            </select>
-          </div>
-          <div className="control-group">
-            <label>&nbsp;</label>
-            <button className="btn btn-primary" onClick={ladeKurse}>
-              Kurse laden
-            </button>
-          </div>
+      <div className="datum-leiste-container">
+        <div className="datum-leiste">
+          <button
+            className={`datum-pill ${selectedDate === null ? 'aktiv' : ''}`}
+            onClick={() => setSelectedDate(null)}
+          >
+            <span className="datum-pill-tag">Alle</span>
+            <span className="datum-pill-datum">{kurse.length}</span>
+          </button>
+
+          {datumLeiste.map(eintrag => {
+            const anzahl = kursAnzahlProDatum.get(eintrag.datumStr) || 0
+            const hatKurse = anzahl > 0
+            const istAktiv = selectedDate === eintrag.datumStr
+
+            return (
+              <button
+                key={eintrag.datumStr}
+                className={[
+                  'datum-pill',
+                  istAktiv ? 'aktiv' : '',
+                  !hatKurse ? 'leer' : '',
+                  eintrag.istHeute ? 'heute' : '',
+                ].filter(Boolean).join(' ')}
+                onClick={() => setSelectedDate(eintrag.datumStr)}
+              >
+                <span className="datum-pill-tag">{eintrag.wochentagKurz}</span>
+                <span className="datum-pill-datum">{eintrag.tagMonat}</span>
+                {hatKurse && <span className="datum-pill-anzahl">{anzahl}</span>}
+              </button>
+            )
+          })}
         </div>
       </div>
 
       <div className="kurse-section">
         <div className="kurse-header">
           <h2>Verfügbare Kurse</h2>
-          <span className="badge">{anzahl}</span>
+          <span className="badge">{gefilterteKurse.length}</span>
         </div>
         
         <div className="kurse-liste">
@@ -175,6 +226,10 @@ export default function Home() {
           ) : kurse.length === 0 ? (
             <div className="status">
               <p>Keine Kurse im gewählten Zeitraum gefunden</p>
+            </div>
+          ) : gefilterteKurse.length === 0 ? (
+            <div className="status">
+              <p>Keine Kurse an diesem Tag</p>
             </div>
           ) : (
             Object.entries(gruppierteKurse).map(([tag, kurseListe]) => (

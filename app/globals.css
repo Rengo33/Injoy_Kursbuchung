@@ -50,40 +50,120 @@ header p {
   font-size: 1rem;
 }
 
-/* Controls */
-.controls {
-  background: var(--bg-secondary);
+/* Datum-Leiste (Calendar Date Bar) */
+.datum-leiste-container {
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.datum-leiste-container::before,
+.datum-leiste-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 24px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.datum-leiste-container::before {
+  left: 0;
+  background: linear-gradient(to right, var(--bg), transparent);
+}
+
+.datum-leiste-container::after {
+  right: 0;
+  background: linear-gradient(to left, var(--bg), transparent);
+}
+
+.datum-leiste {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 8px 4px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.datum-leiste::-webkit-scrollbar {
+  display: none;
+}
+
+.datum-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 14px;
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 24px;
-  margin-bottom: 24px;
+  background: var(--bg);
+  cursor: pointer;
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  transition: all 0.2s;
+  min-width: 56px;
+  position: relative;
 }
 
-.controls h2 {
-  font-size: 0.875rem;
+.datum-pill:hover {
+  border-color: var(--accent);
+  background: var(--bg-secondary);
+}
+
+.datum-pill.aktiv {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.datum-pill.leer {
+  opacity: 0.4;
+}
+
+.datum-pill.leer:hover {
+  opacity: 0.7;
+}
+
+.datum-pill.heute {
+  border-width: 2px;
+  border-color: var(--accent);
+}
+
+.datum-pill-tag {
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-secondary);
-  margin-bottom: 16px;
+  letter-spacing: 0.03em;
 }
 
-.control-row {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.control-group {
-  flex: 1;
-  min-width: 180px;
-}
-
-.control-group label {
-  display: block;
+.datum-pill-datum {
   font-size: 0.875rem;
   font-weight: 500;
-  margin-bottom: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.datum-pill-anzahl {
+  font-size: 0.625rem;
+  font-weight: 700;
+  background: var(--success);
+  color: white;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: -6px;
+  right: -6px;
+}
+
+.datum-pill.aktiv .datum-pill-anzahl {
+  background: white;
+  color: var(--accent);
 }
 
 select, input {
@@ -432,10 +512,6 @@ footer {
 
 /* Responsive */
 @media (max-width: 640px) {
-  .control-row {
-    flex-direction: column;
-  }
-  
   .kurs-karte {
     flex-direction: column;
     align-items: flex-start;
