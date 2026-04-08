@@ -28,6 +28,8 @@ interface RawCourse {
   total_waiting_lists: number
 }
 
+const WOCHENTAGE = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag']
+
 export async function holeKurse(tageVoraus: number = 7, startTag: number = 1): Promise<Kurs[]> {
   const heute = new Date()
   
@@ -39,13 +41,10 @@ export async function holeKurse(tageVoraus: number = 7, startTag: number = 1): P
   
   const fromStr = fromDatum.toISOString().split('T')[0]
   const toStr = toDatum.toISOString().split('T')[0]
-  // Dynamically determine Berlin timezone offset (CET +01:00 or CEST +02:00)
-  const utcRef = new Date(heute.toLocaleString('en-US', { timeZone: 'UTC' }))
-  const berlinRef = new Date(heute.toLocaleString('en-US', { timeZone: 'Europe/Berlin' }))
-  const offsetHours = Math.round((berlinRef.getTime() - utcRef.getTime()) / (1000 * 60 * 60))
-  const offsetStr = `+${String(offsetHours).padStart(2, '0')}:00`
+  // API stores all times in CET (+01:00) and does not handle DST internally,
+  // so always query with +01:00 to get correct wall clock times
   const isoString = heute.toISOString().split('T')[0] + 'T12:00:00'
-  const timezone = isoString + offsetStr
+  const timezone = isoString + '+01:00'
   
   const url = `${CONFIG.API_BASE_URL}/centers/${CONFIG.CENTER_ID}/hybrid_courseplan?from=${fromStr}T00:01:00Z&to=${toStr}T22:59:59Z&timezone=${encodeURIComponent(timezone)}`
   
@@ -85,15 +84,19 @@ function erstelleUebersicht(kurse: RawCourse[]): Kurs[] {
     const warteliste = course.total_waiting_lists || 0
     const verfuegbar = Math.max(0, kapazitaet - gebucht)
     
-    const dateObj = new Date(startTime)
-    const tz = 'Europe/Berlin'
+    // API returns CET wall clock times (e.g. "2026-04-09T08:45:00+01:00")
+    // Parse time and date directly from the string to avoid UTC conversion issues
+    const [datePart, timePart] = startTime.split('T')
+    const [year, month, day] = datePart.split('-').map(Number)
+    const [hours, minutes] = timePart.split(':')
+    const localDate = new Date(year, month - 1, day)
 
     overview.push({
       id: course.id,
       name,
-      datum: dateObj.toLocaleDateString('de-DE', { timeZone: tz }),
-      wochentag: dateObj.toLocaleDateString('de-DE', { timeZone: tz, weekday: 'long' }),
-      uhrzeit: dateObj.toLocaleTimeString('de-DE', { timeZone: tz, hour: '2-digit', minute: '2-digit' }),
+      datum: `${day}.${month}.${year}`,
+      wochentag: WOCHENTAGE[localDate.getDay()],
+      uhrzeit: `${hours}:${minutes}`,
       trainer,
       raum,
       kapazitaet,
