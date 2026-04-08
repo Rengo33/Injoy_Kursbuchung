@@ -28,12 +28,6 @@ interface RawCourse {
   total_waiting_lists: number
 }
 
-const WOCHENTAGE = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag']
-
-function getWochentag(date: Date): string {
-  return WOCHENTAGE[date.getDay()]
-}
-
 export async function holeKurse(tageVoraus: number = 7, startTag: number = 1): Promise<Kurs[]> {
   const heute = new Date()
   
@@ -92,15 +86,14 @@ function erstelleUebersicht(kurse: RawCourse[]): Kurs[] {
     const verfuegbar = Math.max(0, kapazitaet - gebucht)
     
     const dateObj = new Date(startTime)
-    // Use proper timezone conversion (handles DST automatically)
-    const berlinDate = new Date(dateObj.toLocaleString('en-US', { timeZone: 'Europe/Berlin' }))
-    
+    const tz = 'Europe/Berlin'
+
     overview.push({
       id: course.id,
       name,
-      datum: berlinDate.toLocaleDateString('de-DE'),
-      wochentag: getWochentag(berlinDate),
-      uhrzeit: berlinDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
+      datum: dateObj.toLocaleDateString('de-DE', { timeZone: tz }),
+      wochentag: dateObj.toLocaleDateString('de-DE', { timeZone: tz, weekday: 'long' }),
+      uhrzeit: dateObj.toLocaleTimeString('de-DE', { timeZone: tz, hour: '2-digit', minute: '2-digit' }),
       trainer,
       raum,
       kapazitaet,
