@@ -1,16 +1,20 @@
 import { NextResponse } from 'next/server'
-import { supabaseServer } from '@/lib/supabase/server'
+import { requireUser } from '@/lib/auth-helpers'
+
+const BOOKING_COLUMNS = [
+  'id', 'course_id', 'course_date',
+  'course_name', 'course_wochentag', 'course_uhrzeit', 'course_trainer', 'course_raum',
+  'auto_book', 'scheduled_target', 'qstash_message_id',
+  'status', 'external_message', 'created_at',
+].join(',')
 
 export async function GET() {
-  const supabase = supabaseServer()
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) {
-    return NextResponse.json({ bookings: [], authenticated: false })
-  }
+  const auth = await requireUser()
+  if (!auth.ok) return NextResponse.json({ bookings: [], authenticated: false })
 
-  const { data, error } = await supabase
+  const { data, error } = await auth.supabase
     .from('bookings')
-    .select('*')
+    .select(BOOKING_COLUMNS)
     .order('course_date', { ascending: false })
     .limit(50)
 

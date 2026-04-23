@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import type { User } from '@supabase/supabase-js'
+import type { User, SupabaseClient } from '@supabase/supabase-js'
 import { bucheKurs, BuchungsData, berechneTargetZeitpunkt } from '@/lib/kurs-service'
 import { consumeCredit, refundCredit } from '@/lib/credits'
 import { supabaseServer } from '@/lib/supabase/server'
@@ -16,6 +16,7 @@ interface Payload extends BuchungsData {
 }
 
 interface RecordArgs {
+  supabase: SupabaseClient
   data: Payload
   user: User | null
   status: Status
@@ -27,8 +28,7 @@ interface RecordArgs {
 async function recordBooking(args: RecordArgs) {
   if (!args.user) return
   try {
-    const supabase = supabaseServer()
-    await supabase.from('bookings').insert({
+    await args.supabase.from('bookings').insert({
       user_id: args.user.id,
       course_id: args.data.course_id,
       course_date: args.data.course_date,
@@ -94,10 +94,10 @@ export async function POST(request: Request) {
     const supabase = supabaseServer()
     const { data: userData } = await supabase.auth.getUser()
     const user = userData.user
+    const userId = user?.id ?? null
 
-    // Auto-Book: Credit abziehen
     if (sollGeplantWerden) {
-      const check = await consumeCredit(user?.id ?? null, `auto_book:${data.course_id}`, data.course_id)
+      const check = await consumeCredit(userId, `auto_book:${data.course_id}`, data.course_id)
       if (!check.ok) {
         if (check.reason === 'auth_required') {
           return NextResponse.json(
@@ -115,8 +115,7 @@ export async function POST(request: Request) {
         const qstashMessageId = await scheduleViaQstash(data, diffMs)
         const message = `Auto-Book aktiv: Die Buchung erfolgt am ${formatBerlinDateTime(targetZeit)}.`
         await recordBooking({
-          data,
-          user,
+          supabase, data, user,
           status: BookingStatus.Scheduled,
           scheduledTarget: targetZeit,
           message,
@@ -129,21 +128,19 @@ export async function POST(request: Request) {
           targetTime: targetZeit.toISOString(),
         })
       } catch (err) {
-        await refundCredit(user?.id ?? null, `auto_book_failed:${data.course_id}`)
+        await refundCredit(userId, `auto_book_failed:${data.course_id}`)
         throw err
       }
     }
 
-    // Direkte Buchung (inkl. Auto-Book-Klick wenn Kurs bereits freigegeben)
     const result = await bucheKurs(data)
     await recordBooking({
-      data,
-      user,
+      supabase, data, user,
       status: result.success ? BookingStatus.Confirmed : BookingStatus.Failed,
       message: result.message,
     })
 
-    if (data.autoBook && !sollGeplantWerden && result.success) {
+    if (data.autoBook && result.success) {
       return NextResponse.json({
         ...result,
         message: `${result.message} Kein Credit verbraucht — der Kurs ist bereits freigegeben.`,

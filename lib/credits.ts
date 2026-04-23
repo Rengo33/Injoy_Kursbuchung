@@ -14,19 +14,22 @@ export interface CreditCheckResult {
   remaining?: number
 }
 
-export async function getCreditStatus(userId: string | null): Promise<CreditStatus> {
-  if (CONFIG.FREE_MODE) {
-    return {
-      credits: CONFIG.FREE_MODE_CREDITS,
-      monthlyAllowance: CONFIG.FREE_MODE_CREDITS,
-      nextRefill: null,
-      freeMode: true,
-    }
+export function makeFreeStatus(): CreditStatus {
+  return {
+    credits: CONFIG.FREE_MODE_CREDITS,
+    monthlyAllowance: CONFIG.FREE_MODE_CREDITS,
+    nextRefill: null,
+    freeMode: true,
   }
+}
 
-  if (!userId) {
-    return { credits: 0, monthlyAllowance: 0, nextRefill: null, freeMode: false }
-  }
+export function makeEmptyStatus(): CreditStatus {
+  return { credits: 0, monthlyAllowance: 0, nextRefill: null, freeMode: false }
+}
+
+export async function getCreditStatus(userId: string | null): Promise<CreditStatus> {
+  if (CONFIG.FREE_MODE) return makeFreeStatus()
+  if (!userId) return makeEmptyStatus()
 
   const supa = supabaseAdmin()
   const { data } = await supa
@@ -38,7 +41,7 @@ export async function getCreditStatus(userId: string | null): Promise<CreditStat
   const credits = data?.credits ?? 0
   return {
     credits,
-    monthlyAllowance: Math.max(10, credits),
+    monthlyAllowance: credits,
     nextRefill: null,
     freeMode: false,
   }

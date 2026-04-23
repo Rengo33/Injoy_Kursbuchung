@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { MonthCalendar } from './MonthCalendar'
 import { WeekStrip } from './WeekStrip'
 import { MemberCard } from './MemberCard'
-import type { CreditStatus } from '@/lib/credits'
 
 interface Props {
   viewYear: number
@@ -15,7 +14,6 @@ interface Props {
   onSelect: (datumStr: string) => void
   onPrev: () => void
   onNext: () => void
-  credits: CreditStatus | null
 }
 
 export function Sidebar(props: Props) {
@@ -52,7 +50,7 @@ export function Sidebar(props: Props) {
         />
       )}
 
-      <MemberCard credits={props.credits} />
+      <MemberCard />
 
       <div className="sidebar-foot">
         <Link href="/hilfe">Hilfe &amp; FAQ</Link>

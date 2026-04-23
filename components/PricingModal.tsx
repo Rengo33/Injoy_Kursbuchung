@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { EmbeddedCheckoutProvider, EmbeddedCheckout } from '@stripe/react-stripe-js'
 import { useProfile } from '@/lib/use-profile'
@@ -26,19 +26,25 @@ export function PricingModal({ onClose }: Props) {
   const { isAuthed } = useProfile()
   const [view, setView] = useState<View>({ kind: 'tiers' })
   const [demoSuccess, setDemoSuccess] = useState<Tier | null>(null)
+  const [mounted, setMounted] = useState(false)
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEscape(onClose)
 
-  const demoMode = typeof window !== 'undefined' && !isServerPaidMode() && isDemoPaid()
+  useEffect(() => { setMounted(true) }, [])
+  useEffect(() => () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current)
+  }, [])
+
+  const demoMode = mounted && !isServerPaidMode() && isDemoPaid()
 
   const buy = useCallback(async (tier: Tier) => {
-    // Demo: kein Stripe
     if (demoMode) {
       setView({ kind: 'loading', tier })
       await new Promise(r => setTimeout(r, 600))
       addDemoCredits(tier.credits)
       setDemoSuccess(tier)
-      setTimeout(onClose, 1300)
+      closeTimer.current = setTimeout(onClose, 1300)
       return
     }
 
@@ -67,7 +73,7 @@ export function PricingModal({ onClose }: Props) {
   const onComplete = useCallback(() => {
     if (view.kind !== 'checkout') return
     setView({ kind: 'success', tier: view.tier })
-    setTimeout(() => {
+    closeTimer.current = setTimeout(() => {
       refreshCredits()
       onClose()
     }, 2400)

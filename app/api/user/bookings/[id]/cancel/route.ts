@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
-import { supabaseServer } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { refundCredit } from '@/lib/credits'
 import { BookingStatus } from '@/lib/booking-status'
+import { requireUser } from '@/lib/auth-helpers'
 
 async function cancelQstashMessage(messageId: string): Promise<boolean> {
   const token = process.env.QSTASH_TOKEN
@@ -27,17 +27,14 @@ async function cancelQstashMessage(messageId: string): Promise<boolean> {
 }
 
 export async function POST(_request: Request, { params }: { params: { id: string } }) {
-  const supabase = supabaseServer()
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) {
-    return NextResponse.json({ success: false, error: 'Nicht eingeloggt' }, { status: 401 })
-  }
+  const auth = await requireUser()
+  if (!auth.ok) return auth.response
 
-  const { data: booking, error: fetchErr } = await supabase
+  const { data: booking, error: fetchErr } = await auth.supabase
     .from('bookings')
-    .select('*')
+    .select('id, user_id, qstash_message_id, auto_book, course_id, status')
     .eq('id', params.id)
-    .eq('user_id', userData.user.id)
+    .eq('user_id', auth.user.id)
     .maybeSingle()
 
   if (fetchErr || !booking) {
@@ -75,7 +72,7 @@ export async function POST(_request: Request, { params }: { params: { id: string
   let refunded = false
   if (booking.auto_book) {
     try {
-      await refundCredit(userData.user.id, `auto_book_cancelled:${booking.course_id}`)
+      await refundCredit(auth.user.id, `auto_book_cancelled:${booking.course_id}`)
       refunded = true
     } catch (e) {
       console.error('Refund fehlgeschlagen:', e)

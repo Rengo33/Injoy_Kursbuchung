@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { CONFIG } from '@/lib/config'
 import { stripe, getTier } from '@/lib/stripe'
-import { supabaseServer } from '@/lib/supabase/server'
+import { requireUser } from '@/lib/auth-helpers'
 
 export async function POST(request: Request) {
   if (CONFIG.FREE_MODE) {
@@ -18,14 +18,8 @@ export async function POST(request: Request) {
     )
   }
 
-  const supabase = supabaseServer()
-  const { data: userData } = await supabase.auth.getUser()
-  if (!userData.user) {
-    return NextResponse.json(
-      { success: false, error: 'Anmeldung erforderlich.' },
-      { status: 401 }
-    )
-  }
+  const auth = await requireUser()
+  if (!auth.ok) return auth.response
 
   const body = await request.json().catch(() => ({}))
   const tierId = body.tierId as string | undefined
@@ -48,20 +42,16 @@ export async function POST(request: Request) {
       ui_mode: 'embedded_page',
       mode: 'payment',
       line_items: [{ price: tier.priceId, quantity: 1 }],
-      customer_email: userData.user.email ?? undefined,
-      client_reference_id: userData.user.id,
+      customer_email: auth.user.email ?? undefined,
+      client_reference_id: auth.user.id,
       metadata: {
         app: 'injoy',
         tier: tier.id,
         credits: String(tier.credits),
-        user_id: userData.user.id,
+        user_id: auth.user.id,
       },
       payment_intent_data: {
-        metadata: {
-          app: 'injoy',
-          tier: tier.id,
-          user_id: userData.user.id,
-        },
+        metadata: { app: 'injoy', tier: tier.id, user_id: auth.user.id },
       },
       redirect_on_completion: 'never',
       locale: 'de',

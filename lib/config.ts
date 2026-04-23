@@ -10,6 +10,7 @@ export const CONFIG = {
   // Paid-Tier Infrastruktur — solange FREE_MODE=true, werden keine Credits
   // abgezogen und Auto-Book ist für alle kostenlos.
   FREE_MODE: process.env.FREE_MODE !== 'false',
+  FREE_MODE_CLIENT: process.env.NEXT_PUBLIC_FREE_MODE !== 'false',
   FREE_MODE_CREDITS: 999,
 
   // Stripe (Platzhalter, erst aktiv wenn FREE_MODE=false)

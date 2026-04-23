@@ -45,7 +45,7 @@ export function ProfileModal({ onClose }: Props) {
           </div>
           <div className="modal-footer">
             <button type="button" className="btn secondary" onClick={onClose}>Später</button>
-            <Link href="/login" className="btn book" onClick={onClose} style={{ flex: 1, justifyContent: 'center' }}>
+            <Link href="/login" className="btn book profile-login-flex" onClick={onClose}>
               Jetzt anmelden
             </Link>
           </div>
@@ -81,7 +81,7 @@ export function ProfileModal({ onClose }: Props) {
         </div>
 
         <form onSubmit={handleSubmit}>
-          <div className="modal-body" style={{ paddingTop: 8 }}>
+          <div className="modal-body modal-body-tight">
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="p-vorname">Vorname *</label>

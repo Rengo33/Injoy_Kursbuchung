@@ -109,7 +109,6 @@ export default function Home() {
         onSelect={setSelectedDatum}
         onPrev={prevMonat}
         onNext={nextMonat}
-        credits={credits}
       />
 
       <main className="main">

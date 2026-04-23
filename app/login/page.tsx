@@ -39,7 +39,7 @@ export default function LoginPage() {
 
   return (
     <main className="simple-main">
-      <div className="simple-inner" style={{ maxWidth: 460 }}>
+      <div className="simple-inner login-inner">
         <h1 className="simple-title">Anmelden<em>.</em></h1>
 
         <div className="info-card">
@@ -50,7 +50,7 @@ export default function LoginPage() {
                 Wir haben dir einen Link an <b>{email}</b> geschickt.
                 Klicke drauf, dann bist du eingeloggt.
               </p>
-              <p style={{ marginTop: 10, fontSize: 13, color: 'var(--ash)' }}>
+              <p className="login-sent-spam">
                 Nichts im Posteingang? Schau im Spam-Ordner nach.
               </p>
             </>
@@ -77,11 +77,11 @@ export default function LoginPage() {
                   />
                 </div>
 
-                <details style={{ margin: '4px 0 14px' }}>
-                  <summary style={{ fontSize: 13, color: 'var(--sage-deep)', cursor: 'pointer', userSelect: 'none' }}>
+                <details className="login-details">
+                  <summary className="login-details-summary">
                     Neu hier? Namen direkt mitgeben
                   </summary>
-                  <p style={{ fontSize: 12, color: 'var(--ink-soft)', margin: '10px 0 12px' }}>
+                  <p className="login-details-hint">
                     Damit dein Profil gleich fertig ist — du sparst dir den Schritt später.
                   </p>
                   <div className="form-row">
@@ -116,9 +116,8 @@ export default function LoginPage() {
 
                 <button
                   type="submit"
-                  className="btn book"
+                  className="btn book login-submit"
                   disabled={status === 'sending' || !email}
-                  style={{ width: '100%', justifyContent: 'center', marginTop: 8 }}
                 >
                   {status === 'sending' ? 'Wird gesendet…' : 'Magic Link schicken'}
                 </button>

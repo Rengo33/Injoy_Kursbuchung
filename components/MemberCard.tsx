@@ -1,14 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import type { CreditStatus } from '@/lib/credits'
+import { useCredits } from '@/lib/use-credits'
 import { PricingModal } from './PricingModal'
 
-interface Props {
-  credits: CreditStatus | null
-}
-
-export function MemberCard({ credits }: Props) {
+export function MemberCard() {
+  const { credits } = useCredits()
   const [pricingOpen, setPricingOpen] = useState(false)
 
   if (!credits) {
@@ -26,7 +23,7 @@ export function MemberCard({ credits }: Props) {
           <span>Auto-Book</span>
           <b className="member-beta">Beta</b>
         </div>
-        <div style={{ fontSize: 12, color: 'var(--ink-soft)', lineHeight: 1.5 }}>
+        <div className="member-card-hint">
           Aktuell sind alle automatischen Buchungen kostenlos.
         </div>
       </div>

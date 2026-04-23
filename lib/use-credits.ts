@@ -2,12 +2,16 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import type { CreditStatus } from './credits'
+import { CONFIG } from './config'
 import { useAuth } from '@/components/AuthProvider'
 
 const DEMO_FLAG_KEY = 'injoy_demo_paid'
 const DEMO_CREDITS_KEY = 'injoy_demo_credits'
 const DEMO_EVENT = 'injoy:demo-change'
 const CREDITS_REFRESH_EVENT = 'injoy:credits-refresh'
+
+const DEMO_MONTHLY = 10
+const DEMO_INITIAL_CREDITS = 3
 
 export function refreshCredits() {
   if (typeof window === 'undefined') return
@@ -20,16 +24,12 @@ function nextRefillLabel(): string {
   return first.toLocaleDateString('de-DE', { day: '2-digit', month: 'short' })
 }
 
-const DEMO_MONTHLY = 10
-const DEMO_INITIAL_CREDITS = 3
-
 export function isServerPaidMode(): boolean {
-  return process.env.NEXT_PUBLIC_FREE_MODE === 'false'
+  return !CONFIG.FREE_MODE_CLIENT
 }
 
 function readFlag(): boolean {
   if (typeof window === 'undefined') return false
-  // Wenn Server bereits im echten Paid-Mode läuft, ist Demo sinnlos — immer ignorieren.
   if (isServerPaidMode()) {
     if (localStorage.getItem(DEMO_FLAG_KEY) === '1') {
       localStorage.removeItem(DEMO_FLAG_KEY)
@@ -66,15 +66,8 @@ export function addDemoCredits(delta: number) {
   writeCredits(readCredits() + delta)
 }
 
-export function consumeDemoCredit(): boolean {
-  const current = readCredits()
-  if (current <= 0) return false
-  writeCredits(current - 1)
-  return true
-}
-
 export function togglePaidPreview() {
-  if (isServerPaidMode()) return // no-op im echten Paid-Modus
+  if (isServerPaidMode()) return
   const next = !readFlag()
   if (next) {
     localStorage.setItem(DEMO_FLAG_KEY, '1')
@@ -87,37 +80,39 @@ export function togglePaidPreview() {
   window.dispatchEvent(new Event(DEMO_EVENT))
 }
 
+function makeDemoStatus(): CreditStatus {
+  return {
+    credits: readCredits(),
+    monthlyAllowance: DEMO_MONTHLY,
+    nextRefill: nextRefillLabel(),
+    freeMode: false,
+  }
+}
+
 export interface CreditsHookResult {
   credits: CreditStatus | null
-  isPaidPreview: boolean
   loading: boolean
+  /** Verbraucht im Demo-Modus einen Credit client-seitig (nach erfolgreicher Buchung). */
+  consumeIfDemo: () => void
 }
 
 export function useCredits(): CreditsHookResult {
   const { user } = useAuth()
   const [credits, setCredits] = useState<CreditStatus | null>(null)
-  const [isPaidPreview, setPaid] = useState(false)
   const [loading, setLoading] = useState(true)
 
   const compute = useCallback(() => {
-    const paid = readFlag()
-    setPaid(paid)
-    if (paid) {
-      setCredits({
-        credits: readCredits(),
-        monthlyAllowance: DEMO_MONTHLY,
-        nextRefill: nextRefillLabel(),
-        freeMode: false,
-      })
+    if (readFlag()) {
+      setCredits(makeDemoStatus())
       setLoading(false)
-    } else {
-      setLoading(true)
-      fetch('/api/user/credits')
-        .then(r => (r.ok ? r.json() : null))
-        .then(data => { if (data) setCredits(data) })
-        .catch(() => {})
-        .finally(() => setLoading(false))
+      return
     }
+    setLoading(true)
+    fetch('/api/user/credits')
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => { if (data) setCredits(data) })
+      .catch(() => {})
+      .finally(() => setLoading(false))
   }, [])
 
   useEffect(() => {
@@ -133,5 +128,12 @@ export function useCredits(): CreditsHookResult {
     }
   }, [compute, user?.id])
 
-  return { credits, isPaidPreview, loading }
+  const consumeIfDemo = useCallback(() => {
+    if (!readFlag()) return
+    const current = readCredits()
+    if (current <= 0) return
+    writeCredits(current - 1)
+  }, [])
+
+  return { credits, loading, consumeIfDemo }
 }

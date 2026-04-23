@@ -87,8 +87,8 @@ export default function MeineKurse() {
             Sobald du eingeloggt bist, findest du hier alle deine Buchungen und geplanten Auto-Bookings
             auf einen Blick.
           </p>
-          <p style={{ marginTop: 14 }}>
-            <Link href="/login" className="btn book" style={{ display: 'inline-flex' }}>Anmelden</Link>
+          <p className="info-card-cta">
+            <Link href="/login" className="btn book back-link-inline">Anmelden</Link>
           </p>
         </div>
       </SimpleShell>
@@ -150,10 +150,10 @@ function BookingCard({
 }) {
   return (
     <div className="info-card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <h3 style={{ marginBottom: 4 }}>{b.course_name ?? `Kurs #${b.course_id}`}</h3>
-          <p style={{ fontSize: 14 }}>
+      <div className="booking-card-head">
+        <div className="booking-card-main">
+          <h3>{b.course_name ?? `Kurs #${b.course_id}`}</h3>
+          <p className="booking-meta">
             {b.course_wochentag && <>{b.course_wochentag}, </>}
             {formatDate(b.course_date)}
             {b.course_uhrzeit && <> · {b.course_uhrzeit}</>}
@@ -161,27 +161,18 @@ function BookingCard({
             {b.course_raum && <> · {b.course_raum}</>}
           </p>
           {b.auto_book && b.scheduled_target && b.status === BookingStatus.Scheduled && (
-            <p style={{ fontSize: 13, color: 'var(--sage-deep)', marginTop: 8 }}>
+            <p className="booking-card-auto">
               Auto-Book am {formatBerlinDateTime(b.scheduled_target)}
             </p>
           )}
           {b.external_message && (
-            <p style={{ fontSize: 13, color: 'var(--ink-soft)', marginTop: 8 }}>
-              {b.external_message}
-            </p>
+            <p className="booking-card-ext">{b.external_message}</p>
           )}
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
-          <span className={`status-chip status-${b.status}`}>
-            {labelFor(b.status)}
-          </span>
+        <div className="booking-card-right">
+          <span className={`status-chip status-${b.status}`}>{labelFor(b.status)}</span>
           {onCancel && (
-            <button
-              className="btn danger"
-              onClick={onCancel}
-              disabled={cancelling}
-              style={{ fontSize: 12, padding: '6px 14px' }}
-            >
+            <button className="btn danger booking-cancel-btn" onClick={onCancel} disabled={cancelling}>
               {cancelling ? 'Storniere…' : 'Stornieren'}
             </button>
           )}
