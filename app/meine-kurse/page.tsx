@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { SimpleShell } from '@/components/SimpleShell'
 import { refreshCredits } from '@/lib/use-credits'
+import { labelFor, BookingStatus } from '@/lib/booking-status'
+import { formatBerlinDateTime } from '@/lib/datum'
 
 interface Booking {
   id: string
@@ -21,19 +23,10 @@ interface Booking {
   created_at: string
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  pending: 'offen',
-  scheduled: 'geplant',
-  confirmed: 'bestätigt',
-  failed: 'fehlgeschlagen',
-  cancelled: 'storniert',
-  waitlist: 'Warteliste',
-}
-
 function formatDate(iso: string): string {
   try {
     const d = new Date(iso)
-    return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    return d.toLocaleDateString('de-DE', { timeZone: 'Europe/Berlin', day: '2-digit', month: '2-digit', year: 'numeric' })
   } catch {
     return iso
   }
@@ -113,8 +106,8 @@ export default function MeineKurse() {
     )
   }
 
-  const geplant = bookings.filter(b => b.status === 'scheduled')
-  const rest = bookings.filter(b => b.status !== 'scheduled')
+  const geplant = bookings.filter(b => b.status === BookingStatus.Scheduled)
+  const rest = bookings.filter(b => b.status !== BookingStatus.Scheduled)
 
   return (
     <SimpleShell title={<>Meine <em>Kurse</em></>}>
@@ -167,9 +160,9 @@ function BookingCard({
             {b.course_trainer && <> · {b.course_trainer}</>}
             {b.course_raum && <> · {b.course_raum}</>}
           </p>
-          {b.auto_book && b.scheduled_target && b.status === 'scheduled' && (
+          {b.auto_book && b.scheduled_target && b.status === BookingStatus.Scheduled && (
             <p style={{ fontSize: 13, color: 'var(--sage-deep)', marginTop: 8 }}>
-              Auto-Book am {new Date(b.scheduled_target).toLocaleString('de-DE')}
+              Auto-Book am {formatBerlinDateTime(b.scheduled_target)}
             </p>
           )}
           {b.external_message && (
@@ -180,7 +173,7 @@ function BookingCard({
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
           <span className={`status-chip status-${b.status}`}>
-            {STATUS_LABEL[b.status] ?? b.status}
+            {labelFor(b.status)}
           </span>
           {onCancel && (
             <button

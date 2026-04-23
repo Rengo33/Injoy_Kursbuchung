@@ -1,18 +1,13 @@
 'use client'
 
 import { useMemo } from 'react'
-
-const MONTHS = [
-  'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
-  'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
-]
+import { formatDatum, sameDay, isPastDay, monatName } from '@/lib/datum'
 
 interface GridDay {
   day: number
   month: number // 0-11
   year: number
   faded: boolean
-  iso: string // YYYY-MM-DD
   datumStr: string // dd.mm.yyyy
 }
 
@@ -50,19 +45,7 @@ function buildGrid(viewYear: number, viewMonth: number): GridDay[] {
 }
 
 function makeDay(d: number, m: number, y: number, faded: boolean): GridDay {
-  const iso = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
-  const datumStr = `${d}.${m + 1}.${y}`
-  return { day: d, month: m, year: y, faded, iso, datumStr }
-}
-
-function isSameDay(a: Date, day: number, month: number, year: number): boolean {
-  return a.getDate() === day && a.getMonth() === month && a.getFullYear() === year
-}
-
-function isPast(day: number, month: number, year: number, today: Date): boolean {
-  const d = new Date(year, month, day)
-  const t = new Date(today.getFullYear(), today.getMonth(), today.getDate())
-  return d < t
+  return { day: d, month: m, year: y, faded, datumStr: formatDatum(new Date(y, m, d)) }
 }
 
 interface Props {
@@ -91,7 +74,7 @@ export function MonthCalendar({
     <div>
       <div className="cal-head">
         <div className="cal-month">
-          {MONTHS[viewMonth]} <em>{viewYear}</em>
+          {monatName(viewMonth)} <em>{viewYear}</em>
         </div>
         <div className="cal-nav">
           <button onClick={onPrev} aria-label="Vorheriger Monat">‹</button>
@@ -106,11 +89,12 @@ export function MonthCalendar({
 
       <div className="cal-grid">
         {grid.map((d, i) => {
+          const dayDate = new Date(d.year, d.month, d.day)
           const cls = ['cal-day']
-          const past = isPast(d.day, d.month, d.year, today)
+          const past = isPastDay(dayDate, today)
           if (d.faded) cls.push('faded')
           if (past) cls.push('past')
-          if (isSameDay(today, d.day, d.month, d.year)) cls.push('today')
+          if (sameDay(today, dayDate)) cls.push('today')
           if (selectedDatum === d.datumStr) cls.push('selected')
           if ((courseCountsByDatum.get(d.datumStr) || 0) > 0 && !past) cls.push('has-courses')
 

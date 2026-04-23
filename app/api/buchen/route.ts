@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server'
+import type { User } from '@supabase/supabase-js'
 import { bucheKurs, BuchungsData, berechneTargetZeitpunkt } from '@/lib/kurs-service'
 import { consumeCredit, refundCredit } from '@/lib/credits'
 import { supabaseServer } from '@/lib/supabase/server'
+import { BookingStatus, type BookingStatus as Status } from '@/lib/booking-status'
+import { formatBerlinDateTime } from '@/lib/datum'
 
 interface Payload extends BuchungsData {
   autoBook?: boolean
@@ -12,80 +15,89 @@ interface Payload extends BuchungsData {
   course_raum?: string
 }
 
-async function recordBooking(
-  data: Payload,
-  status: 'scheduled' | 'confirmed' | 'failed' | 'waitlist',
-  scheduledTarget: Date | null,
-  message: string | null,
-  qstashMessageId: string | null = null
-) {
+interface RecordArgs {
+  data: Payload
+  user: User | null
+  status: Status
+  scheduledTarget?: Date | null
+  message?: string | null
+  qstashMessageId?: string | null
+}
+
+async function recordBooking(args: RecordArgs) {
+  if (!args.user) return
   try {
     const supabase = supabaseServer()
-    const { data: userData } = await supabase.auth.getUser()
-    if (!userData.user) return
     await supabase.from('bookings').insert({
-      user_id: userData.user.id,
-      course_id: data.course_id,
-      course_date: data.course_date,
-      course_name: data.course_name ?? null,
-      course_wochentag: data.course_wochentag ?? null,
-      course_uhrzeit: data.course_uhrzeit ?? null,
-      course_trainer: data.course_trainer ?? null,
-      course_raum: data.course_raum ?? null,
-      auto_book: !!data.autoBook,
-      scheduled_target: scheduledTarget?.toISOString() ?? null,
-      status,
-      external_message: message,
-      qstash_message_id: qstashMessageId,
+      user_id: args.user.id,
+      course_id: args.data.course_id,
+      course_date: args.data.course_date,
+      course_name: args.data.course_name ?? null,
+      course_wochentag: args.data.course_wochentag ?? null,
+      course_uhrzeit: args.data.course_uhrzeit ?? null,
+      course_trainer: args.data.course_trainer ?? null,
+      course_raum: args.data.course_raum ?? null,
+      auto_book: !!args.data.autoBook,
+      scheduled_target: args.scheduledTarget?.toISOString() ?? null,
+      status: args.status,
+      external_message: args.message ?? null,
+      qstash_message_id: args.qstashMessageId ?? null,
     })
   } catch (e) {
     console.error('Konnte Buchung nicht in DB speichern:', e)
   }
 }
 
+async function scheduleViaQstash(data: Payload, diffMs: number): Promise<string | null> {
+  const qstashUrl = `https://qstash.upstash.io/v2/publish/${process.env.APP_URL}/api/buchen/execute`
+  const response = await fetch(qstashUrl, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.QSTASH_TOKEN}`,
+      'Content-Type': 'application/json',
+      'Upstash-Delay': `${Math.floor(diffMs / 1000)}s`,
+      'Upstash-Forward-x-scheduler-secret': process.env.SCHEDULER_SECRET || '',
+    },
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(`QStash Error: ${response.status} - ${errorText}`)
+  }
+  const json = await response.json().catch(() => ({})) as { messageId?: string }
+  return json.messageId ?? null
+}
+
+function validate(data: Payload): string | null {
+  const required: Array<keyof Payload> = ['course_id', 'course_date', 'vorname', 'nachname', 'email']
+  for (const field of required) {
+    if (!data[field]) return `Feld "${String(field)}" ist erforderlich`
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(data.email)) return 'Ungültige E-Mail-Adresse'
+  return null
+}
+
 export async function POST(request: Request) {
   try {
     const data: Payload = await request.json()
 
-    const required = ['course_id', 'course_date', 'vorname', 'nachname', 'email']
-    for (const field of required) {
-      if (!data[field as keyof Payload]) {
-        return NextResponse.json(
-          { success: false, error: `Feld "${field}" ist erforderlich` },
-          { status: 400 }
-        )
-      }
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(data.email)) {
-      return NextResponse.json(
-        { success: false, error: 'Ungültige E-Mail-Adresse' },
-        { status: 400 }
-      )
+    const validationError = validate(data)
+    if (validationError) {
+      return NextResponse.json({ success: false, error: validationError }, { status: 400 })
     }
 
     const targetZeit = berechneTargetZeitpunkt(data.course_date)
-    const jetzt = new Date()
-    const diffMs = targetZeit.getTime() - jetzt.getTime()
-    const soll_geplant_werden = data.autoBook === true && diffMs > 5000
+    const diffMs = targetZeit.getTime() - Date.now()
+    const sollGeplantWerden = data.autoBook === true && diffMs > 5000
 
-    console.log('[api/buchen]', {
-      course_id: data.course_id,
-      autoBook: data.autoBook,
-      diffMs,
-      soll_geplant_werden,
-    })
+    const supabase = supabaseServer()
+    const { data: userData } = await supabase.auth.getUser()
+    const user = userData.user
 
-    let creditConsumed = false
-    let creditUserId: string | null = null
-    if (soll_geplant_werden) {
-      const supabase = supabaseServer()
-      const { data: userData } = await supabase.auth.getUser()
-      creditUserId = userData.user?.id ?? null
-      console.log('[api/buchen] consuming credit for user:', creditUserId)
-      const check = await consumeCredit(creditUserId, `auto_book:${data.course_id}`, data.course_id)
-      console.log('[api/buchen] credit check result:', check)
+    // Auto-Book: Credit abziehen
+    if (sollGeplantWerden) {
+      const check = await consumeCredit(user?.id ?? null, `auto_book:${data.course_id}`, data.course_id)
       if (!check.ok) {
         if (check.reason === 'auth_required') {
           return NextResponse.json(
@@ -98,41 +110,18 @@ export async function POST(request: Request) {
           { status: 402 }
         )
       }
-      creditConsumed = true
-    }
 
-    if (soll_geplant_werden) {
       try {
-        const qstashUrl = `https://qstash.upstash.io/v2/publish/${process.env.APP_URL}/api/buchen/execute`
-
-        const response = await fetch(qstashUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.QSTASH_TOKEN}`,
-            'Content-Type': 'application/json',
-            'Upstash-Delay': `${Math.floor(diffMs / 1000)}s`,
-            'Upstash-Forward-x-scheduler-secret': process.env.SCHEDULER_SECRET || '',
-          },
-          body: JSON.stringify(data),
+        const qstashMessageId = await scheduleViaQstash(data, diffMs)
+        const message = `Auto-Book aktiv: Die Buchung erfolgt am ${formatBerlinDateTime(targetZeit)}.`
+        await recordBooking({
+          data,
+          user,
+          status: BookingStatus.Scheduled,
+          scheduledTarget: targetZeit,
+          message,
+          qstashMessageId,
         })
-
-        if (!response.ok) {
-          const errorText = await response.text()
-          throw new Error(`QStash Error: ${response.status} - ${errorText}`)
-        }
-
-        const qstashResult = await response.json().catch(() => ({} as { messageId?: string }))
-        const qstashMessageId = (qstashResult as { messageId?: string }).messageId ?? null
-
-        const formattedTime = targetZeit.toLocaleString('de-DE', {
-          timeZone: 'Europe/Berlin',
-          day: '2-digit', month: '2-digit', year: 'numeric',
-          hour: '2-digit', minute: '2-digit', second: '2-digit',
-        })
-
-        const message = `Auto-Book aktiv: Die Buchung erfolgt am ${formattedTime}.`
-        await recordBooking(data, 'scheduled', targetZeit, message, qstashMessageId)
-
         return NextResponse.json({
           success: true,
           message,
@@ -140,30 +129,26 @@ export async function POST(request: Request) {
           targetTime: targetZeit.toISOString(),
         })
       } catch (err) {
-        if (creditConsumed) {
-          await refundCredit(creditUserId, `auto_book_failed:${data.course_id}`)
-        }
+        await refundCredit(user?.id ?? null, `auto_book_failed:${data.course_id}`)
         throw err
       }
     }
 
+    // Direkte Buchung (inkl. Auto-Book-Klick wenn Kurs bereits freigegeben)
     const result = await bucheKurs(data)
-    await recordBooking(
+    await recordBooking({
       data,
-      result.success ? 'confirmed' : 'failed',
-      null,
-      result.message
-    )
+      user,
+      status: result.success ? BookingStatus.Confirmed : BookingStatus.Failed,
+      message: result.message,
+    })
 
-    // Falls Auto-Book geklickt wurde aber der Kurs bereits freigegeben ist,
-    // machen wir's transparent: direkte Buchung, kein Credit verbraucht.
-    if (data.autoBook && !soll_geplant_werden && result.success) {
+    if (data.autoBook && !sollGeplantWerden && result.success) {
       return NextResponse.json({
         ...result,
         message: `${result.message} Kein Credit verbraucht — der Kurs ist bereits freigegeben.`,
       })
     }
-
     return NextResponse.json(result)
   } catch (error) {
     return NextResponse.json(

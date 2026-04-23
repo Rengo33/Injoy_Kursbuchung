@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { supabaseBrowser } from './supabase/client'
+import { refreshCredits } from './use-credits'
 import { useAuth } from '@/components/AuthProvider'
 
 export interface Profile {
@@ -119,11 +120,7 @@ export function useProfile(): UseProfileResult {
     const supabase = supabaseBrowser()
     await supabase.auth.signOut()
     setProfileState(null)
-    // Credits-UI neu laden (auf 0 zurück)
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new Event('injoy:credits-refresh'))
-    }
-    // Auth-Provider updated sich zusätzlich automatisch via onAuthStateChange
+    refreshCredits()
   }, [])
 
   const hasProfile = !!profile && !!profile.vorname && !!profile.nachname

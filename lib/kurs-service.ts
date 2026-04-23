@@ -1,4 +1,5 @@
 import { CONFIG } from './config'
+import { formatDatum } from './datum'
 
 export interface Kurs {
   id: number
@@ -94,7 +95,7 @@ function erstelleUebersicht(kurse: RawCourse[]): Kurs[] {
     overview.push({
       id: course.id,
       name,
-      datum: `${day}.${month}.${year}`,
+      datum: formatDatum(localDate),
       wochentag: WOCHENTAGE[localDate.getDay()],
       uhrzeit: `${hours}:${minutes}`,
       trainer,

@@ -5,6 +5,8 @@ import type { Kurs } from '@/lib/kurs-service'
 import { berechneTargetZeitpunkt } from '@/lib/kurs-service'
 import { useCredits, consumeDemoCredit, refreshCredits } from '@/lib/use-credits'
 import { useProfile } from '@/lib/use-profile'
+import { useEscape, onOverlayClick } from '@/lib/use-modal-dismiss'
+import { formatBerlinDateTime } from '@/lib/datum'
 import { PricingModal } from './PricingModal'
 
 interface Props {
@@ -26,8 +28,10 @@ export function BookingModal({ kurs, autoBook, istWarteliste, onClose, onSuccess
     notiz: '',
   })
   const [userEdited, setUserEdited] = useState(false)
+  const [status, setStatus] = useState<{ type: 'erfolg' | 'fehler'; message: string } | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [pricingOpen, setPricingOpen] = useState(false)
 
-  // Profil-Daten nachträglich einfüllen wenn sie async ankommen (und User nicht schon getippt hat).
   useEffect(() => {
     if (userEdited || !profile) return
     setFormData(f => ({
@@ -38,15 +42,8 @@ export function BookingModal({ kurs, autoBook, istWarteliste, onClose, onSuccess
       notiz: f.notiz,
     }))
   }, [profile, userEdited])
-  const [status, setStatus] = useState<{ type: 'erfolg' | 'fehler'; message: string } | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [pricingOpen, setPricingOpen] = useState(false)
 
-  useEffect(() => {
-    const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', onEsc)
-    return () => document.removeEventListener('keydown', onEsc)
-  }, [onClose])
+  useEscape(onClose)
 
   const target = autoBook ? berechneTargetZeitpunkt(kurs.course_date) : null
   const targetInZukunft = target && target > new Date()
@@ -122,7 +119,7 @@ export function BookingModal({ kurs, autoBook, istWarteliste, onClose, onSuccess
 
   return (
     <>
-      <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal-overlay" onClick={onOverlayClick(onClose)}>
         <div className="modal">
           <div className="modal-header">
             <h2>{titel}</h2>

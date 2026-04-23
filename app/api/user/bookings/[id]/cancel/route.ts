@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseServer } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { refundCredit } from '@/lib/credits'
+import { BookingStatus } from '@/lib/booking-status'
 
 async function cancelQstashMessage(messageId: string): Promise<boolean> {
   const token = process.env.QSTASH_TOKEN
@@ -14,12 +15,8 @@ async function cancelQstashMessage(messageId: string): Promise<boolean> {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     })
-    // QStash antwortet 202 bei Erfolg, 404 falls Message schon abgearbeitet
     if (res.ok) return true
-    if (res.status === 404) {
-      console.log(`QStash message ${messageId} nicht mehr da — vermutlich bereits ausgeführt`)
-      return false
-    }
+    if (res.status === 404) return false
     const text = await res.text().catch(() => '')
     console.error(`QStash cancel fehlgeschlagen: ${res.status} ${text}`)
     return false
@@ -47,7 +44,7 @@ export async function POST(_request: Request, { params }: { params: { id: string
     return NextResponse.json({ success: false, error: 'Buchung nicht gefunden' }, { status: 404 })
   }
 
-  if (booking.status !== 'scheduled') {
+  if (booking.status !== BookingStatus.Scheduled) {
     return NextResponse.json(
       {
         success: false,
@@ -57,29 +54,24 @@ export async function POST(_request: Request, { params }: { params: { id: string
     )
   }
 
-  // QStash-Message stornieren
-  let qstashCancelled = false
-  if (booking.qstash_message_id) {
-    qstashCancelled = await cancelQstashMessage(booking.qstash_message_id)
-  }
-
-  // Status in DB setzen (service role weil RLS-update-Policy nur für User existiert)
+  // RLS erlaubt User-Updates nicht wenn der DB-Trigger später Status-Transitions
+  // erzwingt; wir nutzen daher admin. QStash-Cancel + DB-Update sind unabhängig.
   const admin = supabaseAdmin()
-  const { error: updateErr } = await admin
-    .from('bookings')
-    .update({
-      status: 'cancelled',
-      external_message: qstashCancelled
-        ? 'Vom Nutzer vor Ausführung storniert'
-        : 'Storniert — QStash-Message war möglicherweise bereits in Ausführung',
-    })
-    .eq('id', booking.id)
+  const [qstashCancelled, { error: updateErr }] = await Promise.all([
+    booking.qstash_message_id ? cancelQstashMessage(booking.qstash_message_id) : Promise.resolve(false),
+    admin
+      .from('bookings')
+      .update({
+        status: BookingStatus.Cancelled,
+        external_message: 'Vom Nutzer storniert',
+      })
+      .eq('id', booking.id),
+  ])
 
   if (updateErr) {
     return NextResponse.json({ success: false, error: updateErr.message }, { status: 500 })
   }
 
-  // Credit zurückerstatten
   let refunded = false
   if (booking.auto_book) {
     try {

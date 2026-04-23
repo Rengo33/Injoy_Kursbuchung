@@ -31,6 +31,9 @@ export async function middleware(request: NextRequest) {
   return response
 }
 
+// /api/* ist bewusst ausgeschlossen: Route-Handler, die Session brauchen,
+// rufen supabaseServer().auth.getUser() selbst auf und refreshen damit das Token.
+// Middleware hier würde nur eine zweite Supabase-Roundtrip pro API-Call kosten.
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 }

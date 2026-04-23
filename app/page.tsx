@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Kurs } from '@/lib/kurs-service'
 import { kategorieFuerKurs, type Kategorie } from '@/lib/kategorien'
 import { useCredits } from '@/lib/use-credits'
+import { formatDatum, parseDatum, kwNummer, monatName } from '@/lib/datum'
 import { Sidebar } from '@/components/Sidebar'
 import { FilterChips } from '@/components/FilterChips'
 import { CourseCard } from '@/components/CourseCard'
@@ -13,30 +14,6 @@ const WOCHENTAGE_LANG = [
   'Sonntag', 'Montag', 'Dienstag', 'Mittwoch',
   'Donnerstag', 'Freitag', 'Samstag',
 ]
-
-function parseDatum(datumStr: string): Date | null {
-  const parts = datumStr.split('.')
-  if (parts.length !== 3) return null
-  const [d, m, y] = parts.map(Number)
-  if (!d || !m || !y) return null
-  return new Date(y, m - 1, d)
-}
-
-function formatDatum(d: Date): string {
-  return `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}`
-}
-
-function kwNummer(d: Date): number {
-  const target = new Date(d.valueOf())
-  const dayNr = (d.getDay() + 6) % 7
-  target.setDate(target.getDate() - dayNr + 3)
-  const firstThursday = target.valueOf()
-  target.setMonth(0, 1)
-  if (target.getDay() !== 4) {
-    target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7)
-  }
-  return 1 + Math.ceil((firstThursday - target.valueOf()) / 604800000)
-}
 
 interface ModalState {
   kurs: Kurs
@@ -100,7 +77,7 @@ export default function Home() {
   const selectedDate = useMemo(() => parseDatum(selectedDatum), [selectedDatum])
   const wochentag = selectedDate ? WOCHENTAGE_LANG[selectedDate.getDay()] : ''
   const tagTitel = selectedDate
-    ? `${selectedDate.getDate()}. ${['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'][selectedDate.getMonth()]}`
+    ? `${selectedDate.getDate()}. ${monatName(selectedDate.getMonth())}`
     : ''
   const kw = selectedDate ? kwNummer(selectedDate) : null
 

@@ -9,17 +9,18 @@ const DEMO_CREDITS_KEY = 'injoy_demo_credits'
 const DEMO_EVENT = 'injoy:demo-change'
 const CREDITS_REFRESH_EVENT = 'injoy:credits-refresh'
 
-/**
- * Triggert ein serverseitiges Neu-Laden der Credits.
- * Aufrufen nach Buchungen, Käufen, Refunds.
- */
 export function refreshCredits() {
   if (typeof window === 'undefined') return
   window.dispatchEvent(new Event(CREDITS_REFRESH_EVENT))
 }
 
+function nextRefillLabel(): string {
+  const d = new Date()
+  const first = new Date(d.getFullYear(), d.getMonth() + 1, 1)
+  return first.toLocaleDateString('de-DE', { day: '2-digit', month: 'short' })
+}
+
 const DEMO_MONTHLY = 10
-const DEMO_NEXT_REFILL = '01. Mai'
 const DEMO_INITIAL_CREDITS = 3
 
 export function isServerPaidMode(): boolean {
@@ -105,7 +106,7 @@ export function useCredits(): CreditsHookResult {
       setCredits({
         credits: readCredits(),
         monthlyAllowance: DEMO_MONTHLY,
-        nextRefill: DEMO_NEXT_REFILL,
+        nextRefill: nextRefillLabel(),
         freeMode: false,
       })
       setLoading(false)

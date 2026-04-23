@@ -1,27 +1,15 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import Link from 'next/link'
 import { EmbeddedCheckoutProvider, EmbeddedCheckout } from '@stripe/react-stripe-js'
 import { useProfile } from '@/lib/use-profile'
-import { addDemoCredits, isDemoPaid, isServerPaidMode } from '@/lib/use-credits'
+import { addDemoCredits, isDemoPaid, isServerPaidMode, refreshCredits } from '@/lib/use-credits'
 import { getStripe } from '@/lib/stripe-browser'
+import { useEscape, onOverlayClick } from '@/lib/use-modal-dismiss'
+import { TIER_DISPLAY, type TierDisplay } from '@/lib/stripe'
 
-interface Tier {
-  id: 'single' | 'bundle' | 'unlimited'
-  name: string
-  credits: number
-  price: string
-  priceNote?: string
-  desc: string
-  featured?: boolean
-}
-
-const TIERS: Tier[] = [
-  { id: 'single', name: 'Einzeln', credits: 1, price: '€ 1,99', desc: '1 Auto-Book' },
-  { id: 'bundle', name: 'Bündel', credits: 10, price: '€ 14,90', priceNote: '· 25 % sparen', desc: '10 Auto-Bookings', featured: true },
-  { id: 'unlimited', name: 'Unlimited', credits: 999, price: '€ 9,90', desc: '999 Credits · Power-User' },
-]
+type Tier = TierDisplay
 
 interface Props {
   onClose: () => void
@@ -39,11 +27,7 @@ export function PricingModal({ onClose }: Props) {
   const [view, setView] = useState<View>({ kind: 'tiers' })
   const [demoSuccess, setDemoSuccess] = useState<Tier | null>(null)
 
-  useEffect(() => {
-    const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', onEsc)
-    return () => document.removeEventListener('keydown', onEsc)
-  }, [onClose])
+  useEscape(onClose)
 
   const demoMode = typeof window !== 'undefined' && !isServerPaidMode() && isDemoPaid()
 
@@ -83,17 +67,14 @@ export function PricingModal({ onClose }: Props) {
   const onComplete = useCallback(() => {
     if (view.kind !== 'checkout') return
     setView({ kind: 'success', tier: view.tier })
-    // Credits werden per Webhook serverseitig gutgeschrieben. Wir warten kurz,
-    // dann Modal schließen — Hook refetched automatisch über Storage-Event
-    // (oder der Nutzer lädt neu).
     setTimeout(() => {
-      window.dispatchEvent(new Event('injoy:demo-change')) // triggert useCredits refetch
+      refreshCredits()
       onClose()
     }, 2400)
   }, [view, onClose])
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+    <div className="modal-overlay" onClick={onOverlayClick(onClose)}>
       <div className={`modal pricing-modal${view.kind === 'checkout' ? ' pricing-modal-wide' : ''}`}>
 
         {view.kind === 'tiers' && (
@@ -112,12 +93,12 @@ export function PricingModal({ onClose }: Props) {
             )}
 
             <div className="pricing-grid">
-              {TIERS.map(tier => (
+              {TIER_DISPLAY.map(tier => (
                 <div key={tier.id} className={`pricing-tier${tier.featured ? ' featured' : ''}`}>
                   {tier.featured && <div className="pricing-badge">empfohlen</div>}
                   <div className="pricing-name">{tier.name}</div>
                   <div className="pricing-price">
-                    <span className="pricing-price-big">{tier.price}</span>
+                    <span className="pricing-price-big">{tier.priceLabel}</span>
                     {tier.priceNote && <span className="pricing-price-note">{tier.priceNote}</span>}
                   </div>
                   <div className="pricing-desc">{tier.desc}</div>

@@ -23,22 +23,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const supabase = supabaseBrowser()
-    let active = true
 
-    supabase.auth.getUser().then(({ data }) => {
-      if (!active) return
-      setUser(data.user)
-      setLoading(false)
-    })
-
+    // onAuthStateChange feuert INITIAL_SESSION direkt beim Subscribe mit dem
+    // aktuellen Session-State — kein separater getUser() nötig.
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!active) return
       setUser(session?.user ?? null)
       setLoading(false)
     })
 
     return () => {
-      active = false
       sub.subscription.unsubscribe()
     }
   }, [])

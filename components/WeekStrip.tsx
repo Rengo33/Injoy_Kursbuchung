@@ -1,43 +1,9 @@
 'use client'
 
 import { useMemo } from 'react'
+import { formatDatum, parseDatum, sameDay, isPastDay, mondayOf, addDays, kwNummer, monatKurz } from '@/lib/datum'
 
 const DOW_KURZ = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
-const MONTHS_KURZ = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
-
-function mondayOf(d: Date): Date {
-  const date = new Date(d.getFullYear(), d.getMonth(), d.getDate())
-  const jsDow = date.getDay()
-  const offset = (jsDow + 6) % 7
-  date.setDate(date.getDate() - offset)
-  return date
-}
-
-function addDays(d: Date, n: number): Date {
-  const copy = new Date(d)
-  copy.setDate(copy.getDate() + n)
-  return copy
-}
-
-function datumStr(d: Date): string {
-  return `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}`
-}
-
-function sameDay(a: Date, b: Date): boolean {
-  return a.getDate() === b.getDate() && a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear()
-}
-
-function kw(d: Date): number {
-  const target = new Date(d.valueOf())
-  const dayNr = (d.getDay() + 6) % 7
-  target.setDate(target.getDate() - dayNr + 3)
-  const firstThursday = target.valueOf()
-  target.setMonth(0, 1)
-  if (target.getDay() !== 4) {
-    target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7)
-  }
-  return 1 + Math.ceil((firstThursday - target.valueOf()) / 604800000)
-}
 
 interface Props {
   selectedDatum: string | null
@@ -50,8 +16,7 @@ export function WeekStrip({ selectedDatum, courseCountsByDatum, onSelect }: Prop
 
   const anchor = useMemo(() => {
     if (!selectedDatum) return today
-    const [d, m, y] = selectedDatum.split('.').map(Number)
-    return new Date(y, m - 1, d)
+    return parseDatum(selectedDatum) ?? today
   }, [selectedDatum, today])
 
   const monday = useMemo(() => mondayOf(anchor), [anchor])
@@ -60,22 +25,16 @@ export function WeekStrip({ selectedDatum, courseCountsByDatum, onSelect }: Prop
     [monday]
   )
 
-  const prevWeek = () => {
-    const next = addDays(monday, -7)
-    onSelect(datumStr(next))
-  }
-  const nextWeek = () => {
-    const next = addDays(monday, 7)
-    onSelect(datumStr(next))
-  }
+  const prevWeek = () => onSelect(formatDatum(addDays(monday, -7)))
+  const nextWeek = () => onSelect(formatDatum(addDays(monday, 7)))
 
-  const rangeLabel = `${monday.getDate()}. – ${days[6].getDate()}. ${MONTHS_KURZ[days[6].getMonth()]}`
+  const rangeLabel = `${monday.getDate()}. – ${days[6].getDate()}. ${monatKurz(days[6].getMonth())}`
 
   return (
     <div>
       <div className="cal-head">
         <div className="cal-month">
-          KW <em>{kw(anchor)}</em>
+          KW <em>{kwNummer(anchor)}</em>
           <small style={{ display: 'block', fontFamily: 'var(--font-ui)', fontSize: 11, color: 'var(--ash)', letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: 4, fontWeight: 500 }}>
             {rangeLabel}
           </small>
@@ -88,9 +47,9 @@ export function WeekStrip({ selectedDatum, courseCountsByDatum, onSelect }: Prop
 
       <div className="week-list">
         {days.map((d, i) => {
-          const ds = datumStr(d)
+          const ds = formatDatum(d)
           const n = courseCountsByDatum.get(ds) || 0
-          const past = d < new Date(today.getFullYear(), today.getMonth(), today.getDate())
+          const past = isPastDay(d, today)
           const isToday = sameDay(d, today)
           const selected = ds === selectedDatum
           const cls = ['week-row']

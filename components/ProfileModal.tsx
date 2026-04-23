@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useProfile } from '@/lib/use-profile'
+import { useEscape, onOverlayClick } from '@/lib/use-modal-dismiss'
 
 interface Props {
   onClose: () => void
@@ -28,16 +29,12 @@ export function ProfileModal({ onClose }: Props) {
     }
   }, [profile])
 
-  useEffect(() => {
-    const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', onEsc)
-    return () => document.removeEventListener('keydown', onEsc)
-  }, [onClose])
+  useEscape(onClose)
 
   // Nicht eingeloggt → zum Login senden
   if (!loading && !isAuthed) {
     return (
-      <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal-overlay" onClick={onOverlayClick(onClose)}>
         <div className="modal">
           <div className="modal-header">
             <h2>Willkommen 👋</h2>
@@ -72,7 +69,7 @@ export function ProfileModal({ onClose }: Props) {
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+    <div className="modal-overlay" onClick={onOverlayClick(onClose)}>
       <div className="modal">
         <div className="modal-header">
           <h2>{hasProfile ? <>Dein <em>Profil</em></> : <>Letzte <em>Schritte</em></>}</h2>
