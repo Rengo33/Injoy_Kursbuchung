@@ -51,22 +51,47 @@ export function useProfile(): UseProfileResult {
       .select('vorname, nachname, telefon')
       .eq('id', user.id)
       .maybeSingle()
-      .then(({ data }) => {
+      .then(async ({ data }) => {
         if (!active) return
-        setProfileState(
-          data
-            ? {
-                vorname: data.vorname,
-                nachname: data.nachname,
-                email: user.email ?? '',
-                telefon: data.telefon ?? undefined,
-              }
-            : {
-                vorname: '',
-                nachname: '',
-                email: user.email ?? '',
-              }
-        )
+
+        if (data) {
+          setProfileState({
+            vorname: data.vorname,
+            nachname: data.nachname,
+            email: user.email ?? '',
+            telefon: data.telefon ?? undefined,
+          })
+          setProfileLoading(false)
+          return
+        }
+
+        // Kein Profil vorhanden → aus user_metadata (vom Login) initialisieren
+        const meta = (user.user_metadata ?? {}) as {
+          vorname?: string
+          nachname?: string
+        }
+        const vorname = meta.vorname?.trim() ?? ''
+        const nachname = meta.nachname?.trim() ?? ''
+
+        if (vorname || nachname) {
+          await supabase.from('profiles').upsert({
+            id: user.id,
+            vorname,
+            nachname,
+            telefon: null,
+          })
+          setProfileState({
+            vorname,
+            nachname,
+            email: user.email ?? '',
+          })
+        } else {
+          setProfileState({
+            vorname: '',
+            nachname: '',
+            email: user.email ?? '',
+          })
+        }
         setProfileLoading(false)
       })
 

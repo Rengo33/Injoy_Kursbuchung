@@ -25,6 +25,19 @@ export function BookingModal({ kurs, autoBook, istWarteliste, onClose, onSuccess
     telefon: profile?.telefon ?? '',
     notiz: '',
   })
+  const [userEdited, setUserEdited] = useState(false)
+
+  // Profil-Daten nachträglich einfüllen wenn sie async ankommen (und User nicht schon getippt hat).
+  useEffect(() => {
+    if (userEdited || !profile) return
+    setFormData(f => ({
+      vorname: f.vorname || profile.vorname,
+      nachname: f.nachname || profile.nachname,
+      email: f.email || profile.email,
+      telefon: f.telefon || (profile.telefon ?? ''),
+      notiz: f.notiz,
+    }))
+  }, [profile, userEdited])
   const [status, setStatus] = useState<{ type: 'erfolg' | 'fehler'; message: string } | null>(null)
   const [loading, setLoading] = useState(false)
   const [pricingOpen, setPricingOpen] = useState(false)
@@ -149,7 +162,7 @@ export function BookingModal({ kurs, autoBook, istWarteliste, onClose, onSuccess
                     placeholder="Dein Vorname"
                     value={formData.vorname}
                     disabled={!!keineGutschrift}
-                    onChange={e => setFormData(f => ({ ...f, vorname: e.target.value }))}
+                    onChange={e => { setUserEdited(true); setFormData(f => ({ ...f, vorname: e.target.value })) }}
                   />
                 </div>
                 <div className="form-group">
@@ -159,7 +172,7 @@ export function BookingModal({ kurs, autoBook, istWarteliste, onClose, onSuccess
                     placeholder="Dein Nachname"
                     value={formData.nachname}
                     disabled={!!keineGutschrift}
-                    onChange={e => setFormData(f => ({ ...f, nachname: e.target.value }))}
+                    onChange={e => { setUserEdited(true); setFormData(f => ({ ...f, nachname: e.target.value })) }}
                   />
                 </div>
               </div>
@@ -171,7 +184,7 @@ export function BookingModal({ kurs, autoBook, istWarteliste, onClose, onSuccess
                   placeholder="deine@email.de"
                   value={formData.email}
                   disabled={!!keineGutschrift}
-                  onChange={e => setFormData(f => ({ ...f, email: e.target.value }))}
+                  onChange={e => { setUserEdited(true); setFormData(f => ({ ...f, email: e.target.value })) }}
                 />
               </div>
 
@@ -181,7 +194,7 @@ export function BookingModal({ kurs, autoBook, istWarteliste, onClose, onSuccess
                   id="telefon" type="tel" placeholder="Optional"
                   value={formData.telefon}
                   disabled={!!keineGutschrift}
-                  onChange={e => setFormData(f => ({ ...f, telefon: e.target.value }))}
+                  onChange={e => { setUserEdited(true); setFormData(f => ({ ...f, telefon: e.target.value })) }}
                 />
               </div>
 
@@ -191,7 +204,7 @@ export function BookingModal({ kurs, autoBook, istWarteliste, onClose, onSuccess
                   id="notiz" type="text" placeholder="Optional"
                   value={formData.notiz}
                   disabled={!!keineGutschrift}
-                  onChange={e => setFormData(f => ({ ...f, notiz: e.target.value }))}
+                  onChange={e => { setUserEdited(true); setFormData(f => ({ ...f, notiz: e.target.value })) }}
                 />
               </div>
 
