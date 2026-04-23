@@ -7,7 +7,7 @@ import { useProfile } from '@/lib/use-profile'
 import { addDemoCredits, isDemoPaid, isServerPaidMode, refreshCredits } from '@/lib/use-credits'
 import { getStripe } from '@/lib/stripe-browser'
 import { useEscape, onOverlayClick } from '@/lib/use-modal-dismiss'
-import { TIER_DISPLAY, type TierDisplay } from '@/lib/stripe'
+import { TIER_DISPLAY, type TierDisplay } from '@/lib/tiers'
 
 type Tier = TierDisplay
 
