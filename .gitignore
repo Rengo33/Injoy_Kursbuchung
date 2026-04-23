@@ -31,3 +31,8 @@ yarn-error.log*
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# AI-Assistant-Workspaces (lokale Skills/Docs, nicht app-relevant)
+.agents/
+.claude/
+skills-lock.json

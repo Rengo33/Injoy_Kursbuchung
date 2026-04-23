@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INJOY — Variante 1 · Stille</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f3ece0;
+    --paper: #faf5e9;
+    --ink: #1c1a14;
+    --ash: #6e685b;
+    --line: #d8cfbc;
+    --sage: #6e8468;
+    --sage-soft: #d6ddcf;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  ::selection { background: var(--ink); color: var(--paper); }
+
+  .frame { max-width: 820px; margin: 0 auto; padding: 32px 28px 96px; }
+
+  /* Header */
+  header.top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .brand {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 18px;
+    letter-spacing: -0.01em;
+  }
+  .brand em { font-style: italic; color: var(--ash); font-weight: 400; }
+  .top-right { display: flex; align-items: baseline; gap: 18px; color: var(--ash); font-size: 13px; }
+  .top-right .cred { color: var(--ink); }
+  .top-right .cred b { font-weight: 600; }
+  .top-right a { color: var(--ash); text-decoration: none; border-bottom: 1px solid transparent; transition: border-color 0.2s; }
+  .top-right a:hover { border-bottom-color: var(--ink); color: var(--ink); }
+
+  /* Hero */
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 400;
+    font-size: clamp(44px, 7vw, 72px);
+    line-height: 1;
+    letter-spacing: -0.035em;
+    margin: 56px 0 8px;
+  }
+  h1 em { font-style: italic; color: var(--sage); font-weight: 400; }
+  .lede { color: var(--ash); font-size: 15px; max-width: 480px; margin-bottom: 48px; }
+
+  /* Date bar */
+  .dates {
+    display: flex;
+    gap: 2px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin: 0 -4px 40px;
+    padding: 4px;
+  }
+  .dates::-webkit-scrollbar { display: none; }
+  .day {
+    flex-shrink: 0;
+    min-width: 58px;
+    padding: 10px 10px 8px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-align: center;
+    border-radius: 6px;
+    transition: background 0.15s;
+    position: relative;
+  }
+  .day:hover { background: var(--paper); }
+  .day-dow {
+    font-size: 11px;
+    color: var(--ash);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .day-num {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    margin-top: 2px;
+  }
+  .day.active {
+    background: var(--ink);
+  }
+  .day.active .day-dow { color: var(--sage-soft); }
+  .day.active .day-num { color: var(--paper); }
+  .day.empty { opacity: 0.3; }
+  .day.today .day-num::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--sage);
+  }
+  .day.active.today .day-num::after { background: var(--sage-soft); }
+
+  /* Day group */
+  .daygroup { margin-bottom: 56px; }
+  .daygroup-label {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    margin-bottom: 18px;
+    color: var(--ash);
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .daygroup-label b {
+    font-family: 'Fraunces', serif;
+    font-size: 20px;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    text-transform: none;
+  }
+  .daygroup-label b em { font-style: italic; color: var(--sage); font-weight: 400; }
+  .daygroup-label .rule { flex: 1; border-top: 1px solid var(--line); position: relative; top: -4px; }
+
+  /* Course row */
+  .course {
+    display: grid;
+    grid-template-columns: 72px 1fr auto;
+    gap: 24px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--line);
+    align-items: center;
+  }
+  .c-time {
+    font-family: 'Fraunces', serif;
+    font-size: 24px;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .c-time small {
+    display: block;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    color: var(--ash);
+    letter-spacing: 0.04em;
+    margin-top: 4px;
+    font-weight: 400;
+  }
+  .c-body { min-width: 0; }
+  .c-title {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 2px;
+  }
+  .c-meta {
+    font-size: 13px;
+    color: var(--ash);
+  }
+  .c-meta span + span::before { content: ' · '; color: var(--line); }
+  .c-seats {
+    font-size: 12px;
+    color: var(--ash);
+    margin-top: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+  .c-seats.tight { color: var(--ink); }
+  .c-seats.full { color: var(--ash); font-style: italic; }
+
+  /* CTA cluster */
+  .c-actions { display: flex; gap: 6px; align-items: center; }
+  .btn {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 9px 16px;
+    border-radius: 999px;
+    cursor: pointer;
+    border: 1px solid;
+    background: transparent;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .btn.primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .btn.primary:hover { background: var(--sage); border-color: var(--sage); }
+  .btn.ghost { color: var(--ink); border-color: var(--line); }
+  .btn.ghost:hover { border-color: var(--ink); }
+  .btn.sage {
+    color: var(--sage);
+    border-color: var(--sage);
+  }
+  .btn.sage:hover { background: var(--sage); color: var(--paper); }
+  .btn.sage::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--sage);
+  }
+  .btn.sage:hover::before { background: var(--paper); }
+
+  /* Footer */
+  footer {
+    margin-top: 80px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    color: var(--ash);
+    font-size: 12px;
+  }
+  footer a { color: var(--ash); text-decoration: none; }
+  footer a:hover { color: var(--ink); }
+
+  @media (max-width: 560px) {
+    .course { grid-template-columns: 56px 1fr; gap: 14px; }
+    .c-actions { grid-column: 1 / -1; margin-top: 4px; }
+    .c-actions .btn { flex: 1; justify-content: center; }
+    h1 { font-size: 40px; }
+    .top-right { gap: 12px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="frame">
+
+  <header class="top">
+    <div class="brand">injoy · <em>kursplan</em></div>
+    <div class="top-right">
+      <span class="cred"><b>12</b> Credits</span>
+      <a href="#">Meine Kurse</a>
+      <a href="#">Konto</a>
+    </div>
+  </header>
+
+  <h1>Kursplan <em>Frühling</em>.</h1>
+  <p class="lede">Finde deinen nächsten Kurs. Oder lass ihn dir automatisch sichern.</p>
+
+  <div class="dates" id="dates"></div>
+
+  <section class="daygroup">
+    <div class="daygroup-label">
+      <b>Donnerstag, <em>23. April</em></b>
+      <div class="rule"></div>
+      <span>6 Kurse</span>
+    </div>
+
+    <div class="course">
+      <div class="c-time">06:30<small>45 min</small></div>
+      <div class="c-body">
+        <div class="c-title">Morning Flow</div>
+        <div class="c-meta"><span>Anna K.</span><span>Studio 1</span></div>
+        <div class="c-seats">8 / 15 belegt</div>
+      </div>
+      <div class="c-actions">
+        <button class="btn primary">Buchen</button>
+        <button class="btn sage" title="Auto-Book · 1 Credit">Auto</button>
+      </div>
+    </div>
+
+    <div class="course">
+      <div class="c-time">09:00<small>60 min</small></div>
+      <div class="c-body">
+        <div class="c-title">HIIT Inferno</div>
+        <div class="c-meta"><span>Marco R.</span><span>Studio 2</span></div>
+        <div class="c-seats full">ausgebucht · 3 auf Warteliste</div>
+      </div>
+      <div class="c-actions">
+        <button class="btn ghost">Warteliste</button>
+        <button class="btn sage" title="Auto-Book · 1 Credit">Auto</button>
+      </div>
+    </div>
+
+    <div class="course">
+      <div class="c-time">12:15<small>45 min</small></div>
+      <div class="c-body">
+        <div class="c-title">Spin &amp; Sweat</div>
+        <div class="c-meta"><span>Jules B.</span><span>Cycling Hall</span></div>
+        <div class="c-seats tight">nur noch 2 Plätze</div>
+      </div>
+      <div class="c-actions">
+        <button class="btn primary">Buchen</button>
+        <button class="btn sage" title="Auto-Book · 1 Credit">Auto</button>
+      </div>
+    </div>
+
+    <div class="course">
+      <div class="c-time">17:30<small>50 min</small></div>
+      <div class="c-body">
+        <div class="c-title">Functional Strength</div>
+        <div class="c-meta"><span>Sven M.</span><span>Studio 3</span></div>
+        <div class="c-seats">6 / 20 belegt</div>
+      </div>
+      <div class="c-actions">
+        <button class="btn primary">Buchen</button>
+        <button class="btn sage" title="Auto-Book · 1 Credit">Auto</button>
+      </div>
+    </div>
+
+    <div class="course">
+      <div class="c-time">19:00<small>50 min</small></div>
+      <div class="c-body">
+        <div class="c-title">Pilates Core</div>
+        <div class="c-meta"><span>Lena F.</span><span>Studio 1</span></div>
+        <div class="c-seats tight">nur noch 1 Platz</div>
+      </div>
+      <div class="c-actions">
+        <button class="btn primary">Buchen</button>
+        <button class="btn sage" title="Auto-Book · 1 Credit">Auto</button>
+      </div>
+    </div>
+
+    <div class="course">
+      <div class="c-time">20:30<small>60 min</small></div>
+      <div class="c-body">
+        <div class="c-title">Deep Stretch</div>
+        <div class="c-meta"><span>Anna K.</span><span>Studio 4</span></div>
+        <div class="c-seats">4 / 15 belegt</div>
+      </div>
+      <div class="c-actions">
+        <button class="btn primary">Buchen</button>
+        <button class="btn sage" title="Auto-Book · 1 Credit">Auto</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>© 2026 Injoy Wolfsburg</span>
+    <span><a href="#">Impressum</a> · <a href="#">Datenschutz</a></span>
+  </footer>
+
+</div>
+
+<script>
+  const days = [
+    {dow:'Mi', day:22, today:true,  n:0},
+    {dow:'Do', day:23, active:true, n:6},
+    {dow:'Fr', day:24, n:4},
+    {dow:'Sa', day:25, n:3},
+    {dow:'So', day:26, n:0},
+    {dow:'Mo', day:27, n:7},
+    {dow:'Di', day:28, n:6},
+    {dow:'Mi', day:29, n:6},
+    {dow:'Do', day:30, n:5},
+    {dow:'Fr', day: 1, n:4},
+    {dow:'Sa', day: 2, n:3},
+    {dow:'So', day: 3, n:0},
+    {dow:'Mo', day: 4, n:8},
+    {dow:'Di', day: 5, n:6},
+  ];
+  document.getElementById('dates').innerHTML = days.map(d => {
+    const cls = ['day'];
+    if (d.active) cls.push('active');
+    if (d.today) cls.push('today');
+    if (d.n === 0) cls.push('empty');
+    return `<button class="${cls.join(' ')}">
+      <div class="day-dow">${d.dow}</div>
+      <div class="day-num">${d.day}</div>
+    </button>`;
+  }).join('');
+</script>
+</body>
+</html>

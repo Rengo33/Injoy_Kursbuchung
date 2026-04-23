@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INJOY — Minimal-Varianten</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #f3ece0;
+    color: #1c1a14;
+    padding: 60px 32px;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 1000px; margin: 0 auto; }
+  header { margin-bottom: 40px; }
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-size: 48px;
+    font-weight: 400;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    margin-bottom: 12px;
+  }
+  h1 em { font-style: italic; color: #6e8468; }
+  header p { color: #6e685b; font-size: 15px; max-width: 540px; line-height: 1.6; }
+
+  .options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 900px) { .options { grid-template-columns: 1fr; } }
+
+  .opt {
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    color: inherit;
+    background: #faf5e9;
+    border: 1px solid #d8cfbc;
+    border-radius: 14px;
+    overflow: hidden;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+  .opt:hover { transform: translateY(-3px); border-color: #6e8468; }
+
+  .preview {
+    aspect-ratio: 5/4;
+    display: grid;
+    place-items: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .preview-1 { background: #f3ece0; }
+  .preview-2 { background: #efe8d8; }
+  .preview-3 { background: #f5efe0; }
+
+  .label {
+    font-family: 'Fraunces', serif;
+    font-size: 36px;
+    font-weight: 400;
+    letter-spacing: -0.03em;
+    color: #1c1a14;
+    z-index: 1;
+  }
+  .label em { font-style: italic; color: #6e8468; }
+
+  .dot-accent {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #6e8468;
+  }
+  .dot-tl { top: 24px; left: 24px; }
+  .dot-br { bottom: 24px; right: 24px; }
+
+  .body { padding: 20px 22px; flex: 1; display: flex; flex-direction: column; }
+  .name {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    font-weight: 500;
+    margin-bottom: 2px;
+    letter-spacing: -0.01em;
+  }
+  .tagline {
+    color: #8e8974;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 14px;
+  }
+  .desc { color: #5f5b4d; font-size: 14px; line-height: 1.55; margin-bottom: 18px; flex: 1; }
+
+  ul.traits {
+    list-style: none;
+    font-size: 12px;
+    color: #6e685b;
+    line-height: 1.8;
+    padding-top: 14px;
+    border-top: 1px solid #d8cfbc;
+  }
+  ul.traits li::before { content: '— '; color: #8e8974; }
+  ul.traits li b { color: #1c1a14; font-weight: 500; }
+
+  .shared {
+    margin-top: 28px;
+    padding: 22px 26px;
+    background: #faf5e9;
+    border: 1px solid #d8cfbc;
+    border-radius: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+  .shared p {
+    color: #5f5b4d;
+    font-size: 14px;
+    max-width: 600px;
+  }
+  .shared p b { color: #1c1a14; font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Drei <em>minimale</em> Richtungen.</h1>
+    <p>Beige + Salbei, stark reduziert. Das Kernversprechen: Kurs sehen, Kurs buchen. Auto-Book ist überall integriert, aber nie aufdringlich — ein zweiter, dezenter Button pro Zeile.</p>
+  </header>
+
+  <div class="options">
+
+    <a class="opt" href="./option-1-atelier.html">
+      <div class="preview preview-1">
+        <span class="dot-accent dot-tl"></span>
+        <div class="label">Stille<em>.</em></div>
+        <span class="dot-accent dot-br"></span>
+      </div>
+      <div class="body">
+        <div class="name">1 · Stille</div>
+        <div class="tagline">Editorial · Whitespace</div>
+        <div class="desc">Ein Kursplan wie eine Seite aus einem Buch. Große Fraunces-Überschrift, Inter für alles andere, durchgehende Hairlines, viel Leerraum. Runde Pill-Buttons als einziger Modern-Touch.</div>
+        <ul class="traits">
+          <li><b>Akzent:</b> Salbei nur am Auto-Button + Heute-Punkt</li>
+          <li><b>Credit:</b> schlichte Zahl oben rechts</li>
+          <li><b>Tonfall:</b> ruhig, durchdacht, zurückhaltend</li>
+        </ul>
+      </div>
+    </a>
+
+    <a class="opt" href="./option-2-pulse.html">
+      <div class="preview preview-2">
+        <span class="dot-accent dot-tl"></span>
+        <div class="label">Garten</div>
+        <span class="dot-accent dot-br"></span>
+      </div>
+      <div class="body">
+        <div class="name">2 · Garten</div>
+        <div class="tagline">Soft · Karten · Freundlich</div>
+        <div class="desc">Weiche, runde Karten auf beigem Grund. DM Sans durchgehend. Jede Kurszeile sitzt in einer eigenen Creme-Karte mit feiner Hairline. Fortschrittsbalken statt Text für Auslastung.</div>
+        <ul class="traits">
+          <li><b>Akzent:</b> Salbei-Outline-Button für Auto-Book</li>
+          <li><b>Credit:</b> kleiner Pill mit Salbei-Dot</li>
+          <li><b>Tonfall:</b> freundlich, sauber, modern</li>
+        </ul>
+      </div>
+    </a>
+
+    <a class="opt" href="./option-3-haven.html">
+      <div class="preview preview-3">
+        <span class="dot-accent dot-tl"></span>
+        <div class="label">Brief<em>.</em></div>
+        <span class="dot-accent dot-br"></span>
+      </div>
+      <div class="body">
+        <div class="name">3 · Brief</div>
+        <div class="tagline">Serifen-Minimal · Typografie pur</div>
+        <div class="desc">Fast alles in Instrument Serif gesetzt. Keine Karten, keine Boxen — nur Typografie, Linien und Raum. Liest sich wie ein persönlicher Brief oder eine Menükarte. Auto-Book als kursiver Link mit Salbei-Punkt.</div>
+        <ul class="traits">
+          <li><b>Akzent:</b> Salbei auf „Auto-Book"-Text und Kursiv-Highlights</li>
+          <li><b>Credit:</b> als beiläufige Zeile „Guthaben: 12"</li>
+          <li><b>Tonfall:</b> sehr ruhig, literarisch, unverwechselbar</li>
+        </ul>
+      </div>
+    </a>
+
+  </div>
+
+  <div class="shared">
+    <p>In allen drei enthalten: <b>Kurs-Liste</b>, <b>14-Tage-Datumsleiste</b>, <b>Credit-Anzeige</b>, <b>Zweit-Button „Auto-Book"</b> pro Kurs, <b>Mobile-Layout</b>. Kein Upsell-Banner, keine Sidebars, keine Hero-Illustrationen.</p>
+  </div>
+
+</div>
+</body>
+</html>

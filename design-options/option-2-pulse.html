@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INJOY — Garten · Full Screen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ebe3d0;
+    --panel: #f4eedc;
+    --card: #faf5e5;
+    --ink: #222118;
+    --ink-soft: #56524a;
+    --ash: #8e8976;
+    --line: rgba(34,33,24,0.08);
+    --line-strong: rgba(34,33,24,0.14);
+    --sage: #6f8668;
+    --sage-deep: #4d6148;
+    --sage-soft: #dce3d2;
+    --clay: #b8805c;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    height: 100%;
+    overflow: hidden;
+  }
+  ::selection { background: var(--sage-deep); color: var(--bg); }
+
+  /* App shell */
+  .app {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    grid-template-rows: 64px 1fr;
+    grid-template-areas:
+      "topbar topbar"
+      "sidebar main";
+    height: 100vh;
+  }
+
+  /* Top bar */
+  .topbar {
+    grid-area: topbar;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px;
+    border-bottom: 1px solid var(--line);
+    background: var(--bg);
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 16px;
+    letter-spacing: -0.01em;
+  }
+  .brand-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--sage);
+    position: relative;
+  }
+  .brand-dot::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    border: 1px solid var(--sage);
+    opacity: 0.4;
+  }
+  .brand em { font-style: normal; color: var(--ash); font-weight: 400; margin-left: 2px; }
+
+  nav.primary {
+    display: flex;
+    gap: 6px;
+  }
+  nav.primary a {
+    color: var(--ink-soft);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 7px 14px;
+    border-radius: 999px;
+    transition: all 0.15s;
+  }
+  nav.primary a:hover { background: var(--panel); color: var(--ink); }
+  nav.primary a.active {
+    background: var(--ink);
+    color: var(--card);
+  }
+
+  .top-actions { display: flex; align-items: center; gap: 10px; }
+  .credit-pill {
+    background: var(--panel);
+    border: 1px solid var(--line-strong);
+    padding: 7px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    color: var(--ink-soft);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .credit-pill:hover { border-color: var(--sage); }
+  .credit-pill::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--sage);
+  }
+  .credit-pill b { color: var(--ink); font-weight: 600; }
+  .avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--sage-soft);
+    color: var(--sage-deep);
+    display: grid;
+    place-items: center;
+    font-weight: 600;
+    font-size: 13px;
+  }
+
+  /* Sidebar */
+  aside.sidebar {
+    grid-area: sidebar;
+    padding: 28px 24px 20px;
+    border-right: 1px solid var(--line);
+    overflow: hidden;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* View switcher */
+  .view-switch {
+    display: inline-flex;
+    background: var(--panel);
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .view-switch button {
+    flex: 1;
+    padding: 6px 14px;
+    background: none;
+    border: none;
+    border-radius: 999px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .view-switch button.on {
+    background: var(--ink);
+    color: var(--card);
+  }
+
+  /* Calendar */
+  .cal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .cal-month {
+    font-family: 'Instrument Serif', serif;
+    font-size: 26px;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
+  .cal-month em {
+    font-style: italic;
+    color: var(--sage);
+    margin-left: 4px;
+  }
+  .cal-nav { display: flex; gap: 4px; }
+  .cal-nav button {
+    width: 28px;
+    height: 28px;
+    background: transparent;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    cursor: pointer;
+    color: var(--ink-soft);
+    font-size: 14px;
+    line-height: 1;
+    display: grid;
+    place-items: center;
+    transition: all 0.15s;
+  }
+  .cal-nav button:hover { border-color: var(--sage); color: var(--sage-deep); }
+
+  .cal-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    font-size: 10px;
+    color: var(--ash);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 600;
+    padding: 4px 0 8px;
+    text-align: center;
+  }
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+  .cal-day {
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink);
+    border-radius: 10px;
+    position: relative;
+    transition: all 0.12s;
+  }
+  .cal-day:hover { background: var(--panel); }
+  .cal-day.faded { color: var(--ash); opacity: 0.45; }
+  .cal-day.past { color: var(--ash); text-decoration: line-through; opacity: 0.5; cursor: not-allowed; }
+  .cal-day.past:hover { background: transparent; }
+  .cal-day.today {
+    box-shadow: inset 0 0 0 1.5px var(--sage);
+    color: var(--sage-deep);
+    font-weight: 600;
+  }
+  .cal-day.selected {
+    background: var(--ink);
+    color: var(--card);
+    font-weight: 600;
+    box-shadow: none;
+  }
+  .cal-day.has-courses::after {
+    content: '';
+    position: absolute;
+    bottom: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--sage);
+  }
+  .cal-day.selected.has-courses::after { background: var(--sage-soft); }
+  .cal-day.today.has-courses::after { bottom: 4px; }
+
+  .cal-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding-top: 12px;
+    margin-top: 4px;
+    border-top: 1px solid var(--line);
+    font-size: 11px;
+    color: var(--ash);
+  }
+  .cal-legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .cal-legend .swatch { width: 8px; height: 8px; border-radius: 50%; background: var(--sage); }
+  .cal-legend .swatch.hollow { background: transparent; border: 1.5px solid var(--sage); }
+  .cal-legend .swatch.filled { background: var(--ink); }
+
+  /* Sidebar: Member card */
+  .member-card {
+    background: var(--panel);
+    border: 1px solid var(--line-strong);
+    border-radius: 16px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .member-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+  .member-row b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .member-progress {
+    height: 4px;
+    background: var(--line-strong);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .member-progress-fill {
+    height: 100%;
+    background: var(--sage);
+    border-radius: 999px;
+    width: 60%;
+  }
+  .member-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: var(--ash);
+    padding-top: 4px;
+  }
+  .member-footer a {
+    color: var(--sage-deep);
+    text-decoration: none;
+    border-bottom: 1px solid var(--sage);
+    padding-bottom: 1px;
+    font-weight: 500;
+  }
+  .member-footer a:hover { color: var(--sage); }
+
+  .sidebar-foot {
+    margin-top: auto;
+    padding-top: 20px;
+    font-size: 11px;
+    color: var(--ash);
+    line-height: 1.7;
+  }
+  .sidebar-foot a { color: var(--ash); text-decoration: none; display: block; padding: 2px 0; }
+  .sidebar-foot a:hover { color: var(--ink); }
+
+  /* Main content */
+  main.main {
+    grid-area: main;
+    overflow: hidden;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .main-head {
+    padding: 40px clamp(28px, 4vw, 64px) 0;
+    flex-shrink: 0;
+  }
+  .main-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px clamp(28px, 4vw, 64px) 60px;
+    min-height: 0;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 8px, #000 calc(100% - 24px), transparent 100%);
+            mask-image: linear-gradient(to bottom, transparent 0, #000 8px, #000 calc(100% - 24px), transparent 100%);
+  }
+  .main-scroll::-webkit-scrollbar { width: 8px; }
+  .main-scroll::-webkit-scrollbar-track { background: transparent; }
+  .main-scroll::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 999px; }
+
+  .day-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 32px;
+  }
+  .day-header-title {
+    font-family: 'Instrument Serif', serif;
+    font-size: clamp(40px, 4.8vw, 64px);
+    font-weight: 400;
+    letter-spacing: -0.025em;
+    line-height: 1;
+  }
+  .day-header-title em { font-style: italic; color: var(--sage); }
+  .day-header-title small {
+    display: block;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ash);
+    margin-top: 8px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .day-summary {
+    display: flex;
+    gap: 18px;
+    align-items: center;
+    font-size: 13px;
+    color: var(--ink-soft);
+    flex-wrap: wrap;
+  }
+  .day-summary .chip {
+    background: var(--panel);
+    border: 1px solid var(--line-strong);
+    padding: 6px 12px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .day-summary .chip b { color: var(--ink); font-weight: 600; }
+  .day-summary .chip .swatch {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--sage);
+  }
+  .day-summary .chip.warn .swatch { background: var(--clay); }
+
+  /* Filter row */
+  .filter-row {
+    display: flex;
+    gap: 6px;
+    padding: 4px 0 24px;
+    flex-wrap: wrap;
+  }
+  .chip-filter {
+    background: transparent;
+    border: 1px solid var(--line-strong);
+    color: var(--ink-soft);
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .chip-filter:hover { border-color: var(--sage); color: var(--sage-deep); }
+  .chip-filter.on {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--card);
+  }
+
+  /* Course list */
+  .courses {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 1100px;
+  }
+  .course {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 18px 22px;
+    display: grid;
+    grid-template-columns: 90px 1fr 180px auto;
+    gap: 28px;
+    align-items: center;
+    transition: all 0.15s;
+  }
+  .course:hover {
+    border-color: var(--line-strong);
+    transform: translateY(-1px);
+    box-shadow: 0 12px 28px -20px rgba(34,33,24,0.15);
+  }
+
+  .c-time {
+    display: flex;
+    flex-direction: column;
+    padding-right: 20px;
+    border-right: 1px solid var(--line);
+  }
+  .c-time-big {
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .c-time-dur {
+    font-size: 11px;
+    color: var(--ash);
+    margin-top: 4px;
+    letter-spacing: 0.04em;
+  }
+
+  .c-body { min-width: 0; }
+  .c-title {
+    font-weight: 600;
+    font-size: 17px;
+    margin-bottom: 3px;
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .c-tag {
+    font-size: 10px;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: var(--sage-soft);
+    color: var(--sage-deep);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .c-tag.signature {
+    background: var(--clay);
+    color: var(--card);
+  }
+  .c-meta {
+    font-size: 13px;
+    color: var(--ink-soft);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .c-meta .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--line-strong); }
+
+  .c-seats {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+  .c-seat-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--ash);
+  }
+  .c-seat-row b { color: var(--ink); font-weight: 600; }
+  .c-seat-row.tight b { color: var(--clay); }
+  .c-seat-row.full b { color: var(--ash); font-style: italic; }
+  .c-progress {
+    height: 4px;
+    background: var(--line-strong);
+    border-radius: 999px;
+    overflow: hidden;
+    position: relative;
+  }
+  .c-progress::after {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    background: var(--sage);
+    width: var(--p, 0%);
+    transition: width 0.3s;
+  }
+  .c-seats.tight .c-progress::after { background: var(--clay); }
+  .c-seats.full .c-progress::after { width: 100%; background: var(--ash); }
+
+  .c-actions { display: flex; gap: 8px; }
+  .btn {
+    border: 1px solid var(--sage);
+    background: transparent;
+    color: var(--sage-deep);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 10px 18px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn:hover {
+    background: var(--sage);
+    color: var(--card);
+  }
+  .btn.book {
+    background: var(--sage);
+    color: var(--card);
+  }
+  .btn.book:hover {
+    background: var(--sage-deep);
+    border-color: var(--sage-deep);
+  }
+  .btn.auto::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--sage);
+    flex-shrink: 0;
+  }
+  .btn.auto:hover::before { background: var(--card); }
+  .btn.wait {
+    border-color: var(--line-strong);
+    color: var(--ink-soft);
+  }
+  .btn.wait:hover {
+    background: transparent;
+    border-color: var(--ink-soft);
+    color: var(--ink);
+  }
+
+  .c-meta-cost {
+    font-size: 11px;
+    color: var(--ash);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Compact responsive */
+  @media (max-width: 1200px) {
+    .course {
+      grid-template-columns: 80px 1fr auto;
+      gap: 20px;
+    }
+    .c-seats { grid-column: 2; margin-top: 4px; }
+    .c-actions { grid-column: 3; grid-row: 1 / 3; }
+  }
+  @media (max-width: 900px) {
+    html, body { overflow: auto; height: auto; }
+    .app {
+      grid-template-columns: 1fr;
+      grid-template-rows: 64px auto auto;
+      grid-template-areas:
+        "topbar"
+        "sidebar"
+        "main";
+      height: auto;
+    }
+    aside.sidebar {
+      border-right: 0;
+      border-bottom: 1px solid var(--line);
+      max-height: none;
+      overflow-y: visible;
+    }
+    nav.primary { display: none; }
+    main.main { padding: 28px 20px 48px; }
+    .course {
+      grid-template-columns: 64px 1fr;
+      gap: 14px;
+      padding: 14px 16px;
+    }
+    .c-time { padding-right: 14px; }
+    .c-seats { grid-column: 1 / -1; margin-top: 6px; }
+    .c-actions { grid-column: 1 / -1; justify-content: flex-end; margin-top: 2px; }
+    .day-header { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-dot"></span>
+      injoy <em>· kursplan</em>
+    </div>
+    <nav class="primary">
+      <a href="#" class="active">Kursplan</a>
+      <a href="#">Meine Kurse</a>
+      <a href="#">Auto-Book</a>
+      <a href="#">Konto</a>
+    </nav>
+    <div class="top-actions">
+      <div class="credit-pill"><b>12</b>&nbsp;Credits</div>
+      <div class="avatar">T</div>
+    </div>
+  </header>
+
+  <!-- Sidebar with calendar -->
+  <aside class="sidebar">
+
+    <div class="view-switch">
+      <button>Woche</button>
+      <button class="on">Monat</button>
+    </div>
+
+    <div>
+      <div class="cal-head">
+        <div class="cal-month">April <em>2026</em></div>
+        <div class="cal-nav">
+          <button aria-label="Vorheriger Monat">‹</button>
+          <button aria-label="Nächster Monat">›</button>
+        </div>
+      </div>
+      <div class="cal-weekdays">
+        <span>M</span><span>D</span><span>M</span><span>D</span><span>F</span><span>S</span><span>S</span>
+      </div>
+      <div class="cal-grid" id="calgrid"></div>
+      <div class="cal-legend">
+        <span><span class="swatch"></span> mit Kursen</span>
+        <span><span class="swatch hollow"></span> heute</span>
+        <span><span class="swatch filled"></span> ausgewählt</span>
+      </div>
+    </div>
+
+    <div class="member-card">
+      <div class="member-row"><span>Auto-Book Credits</span><b>12 / 20</b></div>
+      <div class="member-progress"><div class="member-progress-fill"></div></div>
+      <div class="member-footer">
+        <span>Nachschub · 01. Mai</span>
+        <a href="#">Nachfüllen</a>
+      </div>
+    </div>
+
+    <div class="sidebar-foot">
+      <a href="#">Hilfe &amp; FAQ</a>
+      <a href="#">Impressum</a>
+      <a href="#">Datenschutz</a>
+    </div>
+
+  </aside>
+
+  <!-- Main content -->
+  <main class="main">
+
+    <div class="main-head">
+      <div class="day-header">
+        <div class="day-header-title">
+          Donnerstag, <em>23. April</em>
+          <small>Kalenderwoche 17</small>
+        </div>
+        <div class="day-summary">
+          <span class="chip"><span class="swatch"></span> <b>6</b>&nbsp;Kurse</span>
+          <span class="chip warn"><span class="swatch"></span> <b>2</b>&nbsp;fast voll</span>
+          <span class="chip"><b>12</b>&nbsp;Credits verfügbar</span>
+        </div>
+      </div>
+
+      <div class="filter-row">
+        <button class="chip-filter on">Alle</button>
+        <button class="chip-filter">Kraft</button>
+        <button class="chip-filter">Cardio</button>
+        <button class="chip-filter">Mind &amp; Body</button>
+        <button class="chip-filter">Cycling</button>
+        <button class="chip-filter">Mobility</button>
+      </div>
+    </div>
+
+    <div class="main-scroll">
+    <div class="courses">
+
+      <div class="course">
+        <div class="c-time">
+          <span class="c-time-big">06:30</span>
+          <span class="c-time-dur">45 min</span>
+        </div>
+        <div class="c-body">
+          <div class="c-title">Morning Flow <span class="c-tag">Yoga</span></div>
+          <div class="c-meta"><span>Anna K.</span><span class="dot"></span><span>Studio 1</span></div>
+        </div>
+        <div class="c-seats">
+          <div class="c-seat-row"><span>Belegung</span><b>8 / 15</b></div>
+          <div class="c-progress" style="--p:53%"></div>
+        </div>
+        <div class="c-actions">
+          <button class="btn book">Buchen</button>
+          <button class="btn auto" title="1 Credit">Auto</button>
+        </div>
+      </div>
+
+      <div class="course">
+        <div class="c-time">
+          <span class="c-time-big">09:00</span>
+          <span class="c-time-dur">60 min</span>
+        </div>
+        <div class="c-body">
+          <div class="c-title">HIIT Inferno <span class="c-tag signature">Signature</span></div>
+          <div class="c-meta"><span>Marco R.</span><span class="dot"></span><span>Studio 2</span></div>
+        </div>
+        <div class="c-seats full">
+          <div class="c-seat-row full"><span>Ausgebucht</span><b>14 / 14</b></div>
+          <div class="c-progress"></div>
+        </div>
+        <div class="c-actions">
+          <button class="btn wait">Warteliste</button>
+          <button class="btn auto" title="1 Credit">Auto</button>
+        </div>
+      </div>
+
+      <div class="course">
+        <div class="c-time">
+          <span class="c-time-big">12:15</span>
+          <span class="c-time-dur">45 min</span>
+        </div>
+        <div class="c-body">
+          <div class="c-title">Spin &amp; Sweat <span class="c-tag">Cycling</span></div>
+          <div class="c-meta"><span>Jules B.</span><span class="dot"></span><span>Cycling Hall</span></div>
+        </div>
+        <div class="c-seats tight">
+          <div class="c-seat-row tight"><span>Fast voll</span><b>18 / 20</b></div>
+          <div class="c-progress" style="--p:90%"></div>
+        </div>
+        <div class="c-actions">
+          <button class="btn book">Buchen</button>
+          <button class="btn auto" title="1 Credit">Auto</button>
+        </div>
+      </div>
+
+      <div class="course">
+        <div class="c-time">
+          <span class="c-time-big">17:30</span>
+          <span class="c-time-dur">50 min</span>
+        </div>
+        <div class="c-body">
+          <div class="c-title">Functional Strength <span class="c-tag">Kraft</span></div>
+          <div class="c-meta"><span>Sven M.</span><span class="dot"></span><span>Studio 3</span></div>
+        </div>
+        <div class="c-seats">
+          <div class="c-seat-row"><span>Belegung</span><b>6 / 20</b></div>
+          <div class="c-progress" style="--p:30%"></div>
+        </div>
+        <div class="c-actions">
+          <button class="btn book">Buchen</button>
+          <button class="btn auto" title="1 Credit">Auto</button>
+        </div>
+      </div>
+
+      <div class="course">
+        <div class="c-time">
+          <span class="c-time-big">19:00</span>
+          <span class="c-time-dur">50 min</span>
+        </div>
+        <div class="c-body">
+          <div class="c-title">Pilates Core <span class="c-tag signature">Signature</span></div>
+          <div class="c-meta"><span>Lena F.</span><span class="dot"></span><span>Studio 1</span></div>
+        </div>
+        <div class="c-seats tight">
+          <div class="c-seat-row tight"><span>Nur 1 Platz</span><b>11 / 12</b></div>
+          <div class="c-progress" style="--p:92%"></div>
+        </div>
+        <div class="c-actions">
+          <button class="btn book">Buchen</button>
+          <button class="btn auto" title="1 Credit">Auto</button>
+        </div>
+      </div>
+
+      <div class="course">
+        <div class="c-time">
+          <span class="c-time-big">20:30</span>
+          <span class="c-time-dur">60 min</span>
+        </div>
+        <div class="c-body">
+          <div class="c-title">Deep Stretch <span class="c-tag">Mobility</span></div>
+          <div class="c-meta"><span>Anna K.</span><span class="dot"></span><span>Studio 4</span></div>
+        </div>
+        <div class="c-seats">
+          <div class="c-seat-row"><span>Belegung</span><b>4 / 15</b></div>
+          <div class="c-progress" style="--p:27%"></div>
+        </div>
+        <div class="c-actions">
+          <button class="btn book">Buchen</button>
+          <button class="btn auto" title="1 Credit">Auto</button>
+        </div>
+      </div>
+
+    </div>
+    </div>
+
+  </main>
+
+</div>
+
+<script>
+  /**
+   * April 2026 — 1. April ist ein Mittwoch
+   * Today: 22. April (Mi), Selected: 23. April (Do)
+   * Grid startet Montag.
+   */
+  const selectedDay = 23;
+  const todayDay = 22;
+  // Map: day-of-month -> course count (0 = leer)
+  const courseCounts = {
+    1:4, 2:5, 3:3, 4:2, 5:0,
+    6:7, 7:6, 8:5, 9:6, 10:4, 11:3, 12:0,
+    13:7, 14:6, 15:5, 16:6, 17:4, 18:3, 19:0,
+    20:7, 21:6, 22:0, 23:6, 24:4, 25:3, 26:0,
+    27:7, 28:6, 29:6, 30:5
+  };
+  // April 2026: starts Wed. So grid row 1: [_, _, 1, 2, 3, 4, 5]
+  // Include March tail: 30, 31 as faded
+  const grid = [
+    // Prev month
+    {n:30, faded:true},
+    {n:31, faded:true},
+    // April
+    {n:1},{n:2},{n:3},{n:4},{n:5},
+    {n:6},{n:7},{n:8},{n:9},{n:10},{n:11},{n:12},
+    {n:13},{n:14},{n:15},{n:16},{n:17},{n:18},{n:19},
+    {n:20},{n:21},{n:22},{n:23},{n:24},{n:25},{n:26},
+    {n:27},{n:28},{n:29},{n:30},
+    // Next month fill
+    {n:1, faded:true},{n:2, faded:true},{n:3, faded:true},
+  ];
+  const cg = document.getElementById('calgrid');
+  cg.innerHTML = grid.map(d => {
+    const cls = ['cal-day'];
+    if (d.faded) cls.push('faded');
+    else {
+      if (d.n < todayDay) cls.push('past');
+      if (d.n === todayDay) cls.push('today');
+      if (d.n === selectedDay) cls.push('selected');
+      if (!cls.includes('past') && courseCounts[d.n]) cls.push('has-courses');
+    }
+    return `<button class="${cls.join(' ')}">${d.n}</button>`;
+  }).join('');
+</script>
+</body>
+</html>

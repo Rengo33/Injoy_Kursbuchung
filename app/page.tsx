@@ -1,89 +1,75 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
-import { Kurs, berechneTargetZeitpunkt } from '@/lib/kurs-service'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { Kurs } from '@/lib/kurs-service'
+import { kategorieFuerKurs, type Kategorie } from '@/lib/kategorien'
+import { useCredits } from '@/lib/use-credits'
+import { Sidebar } from '@/components/Sidebar'
+import { FilterChips } from '@/components/FilterChips'
+import { CourseCard } from '@/components/CourseCard'
+import { BookingModal } from '@/components/BookingModal'
 
-interface BuchungsModal {
-  isOpen: boolean
-  kurs: Kurs | null
-  istWarteliste: boolean
+const WOCHENTAGE_LANG = [
+  'Sonntag', 'Montag', 'Dienstag', 'Mittwoch',
+  'Donnerstag', 'Freitag', 'Samstag',
+]
+
+function parseDatum(datumStr: string): Date | null {
+  const parts = datumStr.split('.')
+  if (parts.length !== 3) return null
+  const [d, m, y] = parts.map(Number)
+  if (!d || !m || !y) return null
+  return new Date(y, m - 1, d)
 }
 
-interface DatumEintrag {
-  datumStr: string
-  wochentagKurz: string
-  tagMonat: string
-  istHeute: boolean
+function formatDatum(d: Date): string {
+  return `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}`
 }
 
-const WOCHENTAGE_KURZ = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
-
-function erzeugeDatumLeiste(anzahlTage: number = 14): DatumEintrag[] {
-  const heute = new Date()
-  const eintraege: DatumEintrag[] = []
-
-  for (let i = 0; i < anzahlTage; i++) {
-    const d = new Date(heute)
-    d.setDate(heute.getDate() + i)
-
-    eintraege.push({
-      datumStr: d.toLocaleDateString('de-DE'),
-      wochentagKurz: WOCHENTAGE_KURZ[d.getDay()],
-      tagMonat: d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }),
-      istHeute: i === 0,
-    })
+function kwNummer(d: Date): number {
+  const target = new Date(d.valueOf())
+  const dayNr = (d.getDay() + 6) % 7
+  target.setDate(target.getDate() - dayNr + 3)
+  const firstThursday = target.valueOf()
+  target.setMonth(0, 1)
+  if (target.getDay() !== 4) {
+    target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7)
   }
+  return 1 + Math.ceil((firstThursday - target.valueOf()) / 604800000)
+}
 
-  return eintraege
+interface ModalState {
+  kurs: Kurs
+  autoBook: boolean
+  istWarteliste: boolean
 }
 
 export default function Home() {
   const [kurse, setKurse] = useState<Kurs[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [selectedDate, setSelectedDate] = useState<string | null>(() => {
-    const morgen = new Date()
-    morgen.setDate(morgen.getDate() + 1)
-    return morgen.toLocaleDateString('de-DE')
-  })
-  const [modal, setModal] = useState<BuchungsModal>({ isOpen: false, kurs: null, istWarteliste: false })
-  const [formData, setFormData] = useState({
-    vorname: '',
-    nachname: '',
-    email: '',
-    telefon: '',
-    notiz: '',
-  })
-  const [buchungStatus, setBuchungStatus] = useState<{ type: 'erfolg' | 'fehler'; message: string } | null>(null)
-  const [buchungLoading, setBuchungLoading] = useState(false)
+  const { credits } = useCredits()
+  const [kategorie, setKategorie] = useState<Kategorie>('alle')
 
-  const datumLeiste = useMemo(() => erzeugeDatumLeiste(), [])
+  const heute = useMemo(() => new Date(), [])
+  const morgen = useMemo(() => {
+    const m = new Date()
+    m.setDate(m.getDate() + 1)
+    return m
+  }, [])
 
-  const kursAnzahlProDatum = useMemo(() => {
-    const map = new Map<string, number>()
-    kurse.forEach(k => {
-      map.set(k.datum, (map.get(k.datum) || 0) + 1)
-    })
-    return map
-  }, [kurse])
-
-  const gefilterteKurse = useMemo(
-    () => selectedDate === null ? kurse : kurse.filter(k => k.datum === selectedDate),
-    [kurse, selectedDate]
-  )
+  const [selectedDatum, setSelectedDatum] = useState<string>(() => formatDatum(morgen))
+  const [viewYear, setViewYear] = useState<number>(heute.getFullYear())
+  const [viewMonth, setViewMonth] = useState<number>(heute.getMonth())
+  const [modal, setModal] = useState<ModalState | null>(null)
 
   const ladeKurse = useCallback(async () => {
     setLoading(true)
     setError(null)
-
     try {
       const response = await fetch('/api/kurse?tage=14&start=0')
       const data = await response.json()
-
-      if (!data.success) {
-        throw new Error(data.error || 'Fehler beim Laden')
-      }
-
+      if (!data.success) throw new Error(data.error || 'Fehler beim Laden')
       setKurse(data.kurse)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unbekannter Fehler')
@@ -92,301 +78,122 @@ export default function Home() {
     }
   }, [])
 
-  useEffect(() => {
-    ladeKurse()
-  }, [ladeKurse])
+  useEffect(() => { ladeKurse() }, [ladeKurse])
 
-  const gruppiereKurse = () => {
-    const gruppiert: Record<string, Kurs[]> = {}
+  const kursAnzahlProDatum = useMemo(() => {
+    const map = new Map<string, number>()
+    kurse.forEach(k => map.set(k.datum, (map.get(k.datum) || 0) + 1))
+    return map
+  }, [kurse])
 
-    gefilterteKurse.forEach(kurs => {
-      const key = `${kurs.wochentag}, ${kurs.datum}`
-      if (!gruppiert[key]) {
-        gruppiert[key] = []
-      }
-      gruppiert[key].push(kurs)
-    })
+  const tagesKurse = useMemo(() => {
+    const nachDatum = kurse.filter(k => k.datum === selectedDatum)
+    if (kategorie === 'alle') return nachDatum
+    return nachDatum.filter(k => kategorieFuerKurs(k.name) === kategorie)
+  }, [kurse, selectedDatum, kategorie])
 
-    return gruppiert
+  const tightCount = useMemo(
+    () => tagesKurse.filter(k => k.verfuegbar > 0 && k.verfuegbar <= 3).length,
+    [tagesKurse]
+  )
+
+  const selectedDate = useMemo(() => parseDatum(selectedDatum), [selectedDatum])
+  const wochentag = selectedDate ? WOCHENTAGE_LANG[selectedDate.getDay()] : ''
+  const tagTitel = selectedDate
+    ? `${selectedDate.getDate()}. ${['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'][selectedDate.getMonth()]}`
+    : ''
+  const kw = selectedDate ? kwNummer(selectedDate) : null
+
+  const prevMonat = () => {
+    const d = new Date(viewYear, viewMonth - 1, 1)
+    setViewYear(d.getFullYear())
+    setViewMonth(d.getMonth())
+  }
+  const nextMonat = () => {
+    const d = new Date(viewYear, viewMonth + 1, 1)
+    setViewYear(d.getFullYear())
+    setViewMonth(d.getMonth())
   }
 
-  const oeffneBuchung = (kurs: Kurs) => {
-    setModal({
-      isOpen: true,
-      kurs,
-      istWarteliste: kurs.verfuegbar <= 0,
-    })
-    setBuchungStatus(null)
+  const handleBook = (kurs: Kurs, autoBook: boolean) => {
+    setModal({ kurs, autoBook, istWarteliste: kurs.verfuegbar <= 0 })
   }
 
-  const schliesseBuchung = () => {
-    setModal({ isOpen: false, kurs: null, istWarteliste: false })
-    setFormData({ vorname: '', nachname: '', email: '', telefon: '', notiz: '' })
-    setBuchungStatus(null)
-  }
-
-  const handleBuchung = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!modal.kurs) return
-    
-    setBuchungLoading(true)
-    setBuchungStatus(null)
-    
-    try {
-      const response = await fetch('/api/buchen', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          course_id: modal.kurs.course_id,
-          course_date: modal.kurs.course_date,
-          ...formData,
-        }),
-      })
-      
-      const data = await response.json()
-      
-      if (data.success) {
-        setBuchungStatus({ type: 'erfolg', message: data.message })
-        // Wenn geplant, lassen wir das Modal 5 Sekunden offen, damit man die Zeit lesen kann
-        const delay = data.scheduled ? 5000 : 2000
-        setTimeout(() => {
-          schliesseBuchung()
-          ladeKurse()
-        }, delay)
-      } else {
-        setBuchungStatus({ type: 'fehler', message: data.message || data.error })
-      }
-    } catch (err) {
-      setBuchungStatus({ type: 'fehler', message: 'Netzwerkfehler' })
-    } finally {
-      setBuchungLoading(false)
-    }
-  }
-
-  const gruppierteKurse = gruppiereKurse()
+  const closeModal = () => setModal(null)
+  const onSuccess = () => { setModal(null); ladeKurse() }
 
   return (
-    <div className="container">
-      <header>
-        <h1>INJOY Kursplan</h1>
-        <p>Finde und buche deinen nächsten Kurs</p>
-      </header>
+    <div className="app">
+      <Sidebar
+        viewYear={viewYear}
+        viewMonth={viewMonth}
+        selectedDatum={selectedDatum}
+        courseCountsByDatum={kursAnzahlProDatum}
+        onSelect={setSelectedDatum}
+        onPrev={prevMonat}
+        onNext={nextMonat}
+        credits={credits}
+      />
 
-      <div className="datum-leiste-container">
-        <div className="datum-leiste">
-          <button
-            className={`datum-pill ${selectedDate === null ? 'aktiv' : ''}`}
-            onClick={() => setSelectedDate(null)}
-          >
-            <span className="datum-pill-tag">Alle</span>
-            <span className="datum-pill-datum">{kurse.length}</span>
-          </button>
+      <main className="main">
+        <div className="main-head">
+          <div className="day-header">
+            <div className="day-header-title">
+              {wochentag}, <em>{tagTitel}</em>
+              <small>{kw ? `Kalenderwoche ${kw}` : ''}</small>
+            </div>
+            <div className="day-summary">
+              <span className="chip">
+                <span className="swatch" /> <b>{tagesKurse.length}</b>&nbsp;Kurse
+              </span>
+              {tightCount > 0 && (
+                <span className="chip warn">
+                  <span className="swatch" /> <b>{tightCount}</b>&nbsp;fast voll
+                </span>
+              )}
+              {credits && !credits.freeMode && (
+                <span className="chip"><b>{credits.credits}</b>&nbsp;Credits verfügbar</span>
+              )}
+            </div>
+          </div>
 
-          {datumLeiste.map(eintrag => {
-            const anzahl = kursAnzahlProDatum.get(eintrag.datumStr) || 0
-            const hatKurse = anzahl > 0
-            const istAktiv = selectedDate === eintrag.datumStr
-
-            return (
-              <button
-                key={eintrag.datumStr}
-                className={[
-                  'datum-pill',
-                  istAktiv ? 'aktiv' : '',
-                  !hatKurse ? 'leer' : '',
-                  eintrag.istHeute ? 'heute' : '',
-                ].filter(Boolean).join(' ')}
-                onClick={() => setSelectedDate(eintrag.datumStr)}
-              >
-                <span className="datum-pill-tag">{eintrag.wochentagKurz}</span>
-                <span className="datum-pill-datum">{eintrag.tagMonat}</span>
-                {hatKurse && <span className="datum-pill-anzahl">{anzahl}</span>}
-              </button>
-            )
-          })}
+          <FilterChips selected={kategorie} onSelect={setKategorie} />
         </div>
-      </div>
 
-      <div className="kurse-section">
-        <div className="kurse-header">
-          <h2>Verfügbare Kurse</h2>
-          <span className="badge">{gefilterteKurse.length}</span>
-        </div>
-        
-        <div className="kurse-liste">
+        <div className="main-scroll">
           {loading ? (
-            <div className="status loading">
-              <div className="spinner"></div>
+            <div className="status">
+              <div className="spinner" />
               <p>Kurse werden geladen...</p>
             </div>
           ) : error ? (
-            <div className="status error">
-              <p>Fehler: {error}</p>
-            </div>
-          ) : kurse.length === 0 ? (
+            <div className="status error"><p>Fehler: {error}</p></div>
+          ) : tagesKurse.length === 0 ? (
             <div className="status">
-              <p>Keine Kurse im gewählten Zeitraum gefunden</p>
-            </div>
-          ) : gefilterteKurse.length === 0 ? (
-            <div className="status">
-              <p>Keine Kurse an diesem Tag</p>
+              <p>Keine Kurse an diesem Tag{kategorie !== 'alle' ? ' in dieser Kategorie' : ''}.</p>
             </div>
           ) : (
-            Object.entries(gruppierteKurse).map(([tag, kurseListe]) => (
-              <div key={tag} className="tag-gruppe">
-                <div className="tag-header">{tag}</div>
-                {kurseListe.map(kurs => (
-                  <div key={`${kurs.course_id}-${kurs.course_date}`} className="kurs-karte">
-                    <div className="kurs-zeit">{kurs.uhrzeit}</div>
-                    <div className="kurs-info">
-                      <div className="kurs-name">{kurs.name}</div>
-                      <div className="kurs-details">
-                        {kurs.trainer && <span>Trainer: {kurs.trainer}</span>}
-                        {kurs.raum && <span>Raum: {kurs.raum}</span>}
-                      </div>
-                    </div>
-                    <div className="kurs-stats">
-                      {kurs.kapazitaet > 0 && (
-                        <div className={`kurs-plaetze ${kurs.verfuegbar <= 0 ? 'voll' : kurs.verfuegbar <= 3 ? 'wenig' : ''}`}>
-                          {kurs.gebucht}/{kurs.kapazitaet} 
-                          {kurs.verfuegbar <= 0 ? ' (voll)' : ` (${kurs.verfuegbar} frei)`}
-                        </div>
-                      )}
-                      {kurs.warteliste > 0 && (
-                        <div className="kurs-warteliste">{kurs.warteliste} auf Warteliste</div>
-                      )}
-                    </div>
-                    <button 
-                      className={`btn btn-buchen ${kurs.verfuegbar <= 0 ? 'btn-warning' : 'btn-success'}`}
-                      onClick={() => oeffneBuchung(kurs)}
-                    >
-                      {kurs.verfuegbar <= 0 ? 'Warteliste' : 'Buchen'}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ))
+            <div className="courses">
+              {tagesKurse.map(kurs => (
+                <CourseCard
+                  key={`${kurs.course_id}-${kurs.course_date}`}
+                  kurs={kurs}
+                  onBook={handleBook}
+                />
+              ))}
+            </div>
           )}
         </div>
-      </div>
+      </main>
 
-      <footer>
-        <p>Mit Liebe erstellt</p>
-      </footer>
-
-      {/* Buchungs Modal */}
-      {modal.isOpen && modal.kurs && (
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && schliesseBuchung()}>
-          <div className="modal">
-            <div className="modal-header">
-              <h2>Kurs buchen</h2>
-            </div>
-            
-            <div className="modal-kurs-info">
-              <strong>{modal.kurs.name}</strong>
-              <p>{modal.kurs.wochentag}, {modal.kurs.datum} um {modal.kurs.uhrzeit}</p>
-              
-              {(() => {
-                const target = berechneTargetZeitpunkt(modal.kurs.course_date)
-                const jetzt = new Date()
-                if (target > jetzt) {
-                  return (
-                    <p className="info-geplant">
-                      Automatisierte Buchung am: <strong>{target.toLocaleString('de-DE')}</strong>
-                    </p>
-                  )
-                }
-                return null
-              })()}
-
-              {modal.istWarteliste && (
-                <p className="warnung">Dieser Kurs ist voll – du wirst auf die Warteliste gesetzt</p>
-              )}
-            </div>
-            
-            <form onSubmit={handleBuchung}>
-              <div className="modal-body">
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="vorname">Vorname *</label>
-                    <input
-                      type="text"
-                      id="vorname"
-                      required
-                      placeholder="Dein Vorname"
-                      value={formData.vorname}
-                      onChange={e => setFormData(f => ({ ...f, vorname: e.target.value }))}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="nachname">Nachname *</label>
-                    <input
-                      type="text"
-                      id="nachname"
-                      required
-                      placeholder="Dein Nachname"
-                      value={formData.nachname}
-                      onChange={e => setFormData(f => ({ ...f, nachname: e.target.value }))}
-                    />
-                  </div>
-                </div>
-                
-                <div className="form-group">
-                  <label htmlFor="email">E-Mail *</label>
-                  <input
-                    type="email"
-                    id="email"
-                    required
-                    placeholder="deine@email.de"
-                    value={formData.email}
-                    onChange={e => setFormData(f => ({ ...f, email: e.target.value }))}
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label htmlFor="telefon">Telefon</label>
-                  <input
-                    type="tel"
-                    id="telefon"
-                    placeholder="Optional"
-                    value={formData.telefon}
-                    onChange={e => setFormData(f => ({ ...f, telefon: e.target.value }))}
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label htmlFor="notiz">Notiz</label>
-                  <input
-                    type="text"
-                    id="notiz"
-                    placeholder="Optional"
-                    value={formData.notiz}
-                    onChange={e => setFormData(f => ({ ...f, notiz: e.target.value }))}
-                  />
-                </div>
-                
-                {buchungStatus && (
-                  <div className={`nachricht ${buchungStatus.type}`}>
-                    {buchungStatus.message}
-                  </div>
-                )}
-              </div>
-              
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={schliesseBuchung}>
-                  Abbrechen
-                </button>
-                <button 
-                  type="submit" 
-                  className={`btn ${modal.istWarteliste ? 'btn-warning' : 'btn-success'}`}
-                  disabled={buchungLoading}
-                >
-                  {buchungLoading ? 'Wird gebucht...' : modal.istWarteliste ? 'Auf Warteliste' : 'Jetzt buchen'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {modal && (
+        <BookingModal
+          kurs={modal.kurs}
+          autoBook={modal.autoBook}
+          istWarteliste={modal.istWarteliste}
+          onClose={closeModal}
+          onSuccess={onSuccess}
+        />
       )}
     </div>
   )
