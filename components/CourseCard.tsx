@@ -8,11 +8,6 @@ interface Props {
   onBook: (kurs: Kurs, autoBook: boolean) => void
 }
 
-function kursDauer(_kurs: Kurs): string | null {
-  // Placeholder — die externe API liefert aktuell keine Dauer
-  return null
-}
-
 export function CourseCard({ kurs, onBook }: Props) {
   const voll = kurs.verfuegbar <= 0
   const knapp = !voll && kurs.verfuegbar <= 3
@@ -29,13 +24,11 @@ export function CourseCard({ kurs, onBook }: Props) {
   const seatsValue = `${kurs.gebucht} / ${kurs.kapazitaet}`
 
   const kat = kategorieFuerKurs(kurs.name)
-  const dauer = kursDauer(kurs)
 
   return (
     <div className="course">
       <div className="c-time">
         <span className="c-time-big">{kurs.uhrzeit}</span>
-        {dauer && <span className="c-time-dur">{dauer}</span>}
       </div>
 
       <div className="c-body">

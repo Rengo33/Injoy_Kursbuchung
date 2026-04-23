@@ -97,7 +97,10 @@ export function useProfile(): UseProfileResult {
       })
 
     return () => { active = false }
-  }, [user, authLoading])
+    // user.id ist der einzige relevante Identity-Change; Token-Refreshs ändern das user-Objekt
+    // ohne dass wir neu laden müssen.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, authLoading])
 
   const setProfile = useCallback(async (p: Omit<Profile, 'email'>) => {
     if (!user) return

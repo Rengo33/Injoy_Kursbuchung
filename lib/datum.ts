@@ -58,10 +58,7 @@ export function kwNummer(d: Date): number {
 export const monatName = (m: number): string => MONATE[m] ?? ''
 export const monatKurz = (m: number): string => MONATE_KURZ[m] ?? ''
 
-/**
- * Formatiert Datum + Uhrzeit immer in Europe/Berlin, unabhängig vom
- * Client/Server-Timezone. Wichtig für alle Buchungszeitpunkte.
- */
+// Europe/Berlin erzwingen, damit Buchungszeiten unabhängig vom Client-TZ konsistent sind.
 export function formatBerlinDateTime(iso: string | Date): string {
   const d = typeof iso === 'string' ? new Date(iso) : iso
   return d.toLocaleString('de-DE', {
@@ -69,4 +66,18 @@ export function formatBerlinDateTime(iso: string | Date): string {
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   })
+}
+
+export function formatBerlinDate(iso: string | Date): string {
+  const d = typeof iso === 'string' ? new Date(iso) : iso
+  return d.toLocaleDateString('de-DE', {
+    timeZone: 'Europe/Berlin',
+    day: '2-digit', month: '2-digit', year: 'numeric',
+  })
+}
+
+export function nextMonthFirstLabel(): string {
+  const d = new Date()
+  const first = new Date(d.getFullYear(), d.getMonth() + 1, 1)
+  return first.toLocaleDateString('de-DE', { day: '2-digit', month: 'short' })
 }

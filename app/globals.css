@@ -1178,3 +1178,16 @@ main.main {
 .booking-cancel-btn { font-size: 12px; padding: 6px 14px; }
 
 .info-card-cta { margin-top: 14px; }
+
+.login-intro { margin-bottom: 16px; }
+
+.week-range-label {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--ash);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 4px;
+  font-weight: 500;
+}

@@ -1,5 +1,5 @@
-import Link from 'next/link'
 import { SimpleShell } from '@/components/SimpleShell'
+import { BackToCoursesLink } from '@/components/BackToCoursesLink'
 
 export default function Abbruch() {
   return (
@@ -10,7 +10,7 @@ export default function Abbruch() {
           Es wurde nichts berechnet. Du kannst jederzeit zurückkommen und den Kauf abschließen.
         </p>
         <p style={{ marginTop: 16 }}>
-          <Link href="/" className="back-link">← Zurück zum Kursplan</Link>
+          <BackToCoursesLink />
         </p>
       </div>
     </SimpleShell>

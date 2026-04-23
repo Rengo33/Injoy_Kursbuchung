@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import type { CreditStatus } from './credits'
 import { CONFIG } from './config'
+import { nextMonthFirstLabel } from './datum'
 import { useAuth } from '@/components/AuthProvider'
 
 const DEMO_FLAG_KEY = 'injoy_demo_paid'
@@ -16,12 +17,6 @@ const DEMO_INITIAL_CREDITS = 3
 export function refreshCredits() {
   if (typeof window === 'undefined') return
   window.dispatchEvent(new Event(CREDITS_REFRESH_EVENT))
-}
-
-function nextRefillLabel(): string {
-  const d = new Date()
-  const first = new Date(d.getFullYear(), d.getMonth() + 1, 1)
-  return first.toLocaleDateString('de-DE', { day: '2-digit', month: 'short' })
 }
 
 export function isServerPaidMode(): boolean {
@@ -84,7 +79,7 @@ function makeDemoStatus(): CreditStatus {
   return {
     credits: readCredits(),
     monthlyAllowance: DEMO_MONTHLY,
-    nextRefill: nextRefillLabel(),
+    nextRefill: nextMonthFirstLabel(),
     freeMode: false,
   }
 }

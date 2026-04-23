@@ -35,7 +35,7 @@ export function WeekStrip({ selectedDatum, courseCountsByDatum, onSelect }: Prop
       <div className="cal-head">
         <div className="cal-month">
           KW <em>{kwNummer(anchor)}</em>
-          <small style={{ display: 'block', fontFamily: 'var(--font-ui)', fontSize: 11, color: 'var(--ash)', letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: 4, fontWeight: 500 }}>
+          <small className="week-range-label">
             {rangeLabel}
           </small>
         </div>

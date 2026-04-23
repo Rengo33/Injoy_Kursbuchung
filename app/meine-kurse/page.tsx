@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { SimpleShell } from '@/components/SimpleShell'
+import { BackToCoursesLink } from '@/components/BackToCoursesLink'
 import { refreshCredits } from '@/lib/use-credits'
 import { labelFor, BookingStatus } from '@/lib/booking-status'
-import { formatBerlinDateTime } from '@/lib/datum'
+import { formatBerlinDateTime, formatBerlinDate } from '@/lib/datum'
 
 interface Booking {
   id: string
@@ -21,15 +22,6 @@ interface Booking {
   status: string
   external_message: string | null
   created_at: string
-}
-
-function formatDate(iso: string): string {
-  try {
-    const d = new Date(iso)
-    return d.toLocaleDateString('de-DE', { timeZone: 'Europe/Berlin', day: '2-digit', month: '2-digit', year: 'numeric' })
-  } catch {
-    return iso
-  }
 }
 
 export default function MeineKurse() {
@@ -134,7 +126,7 @@ export default function MeineKurse() {
         </>
       )}
 
-      <Link href="/" className="back-link">← Zurück zum Kursplan</Link>
+      <BackToCoursesLink />
     </SimpleShell>
   )
 }
@@ -155,7 +147,7 @@ function BookingCard({
           <h3>{b.course_name ?? `Kurs #${b.course_id}`}</h3>
           <p className="booking-meta">
             {b.course_wochentag && <>{b.course_wochentag}, </>}
-            {formatDate(b.course_date)}
+            {formatBerlinDate(b.course_date)}
             {b.course_uhrzeit && <> · {b.course_uhrzeit}</>}
             {b.course_trainer && <> · {b.course_trainer}</>}
             {b.course_raum && <> · {b.course_raum}</>}

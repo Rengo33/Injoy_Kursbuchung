@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
 import { addCredits } from '@/lib/credits'
+import { CONFIG } from '@/lib/config'
 import type Stripe from 'stripe'
 
 // Force Node runtime (nicht Edge) wegen der Stripe-Lib Crypto-Calls
 export const runtime = 'nodejs'
 
 export async function POST(request: Request) {
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
+  const webhookSecret = CONFIG.STRIPE_WEBHOOK_SECRET
   if (!webhookSecret) {
     console.warn('STRIPE_WEBHOOK_SECRET nicht gesetzt — Webhook-Events werden ignoriert')
     return NextResponse.json({ received: true, skipped: true })
@@ -51,7 +52,6 @@ export async function POST(request: Request) {
         }
 
         await addCredits(userId, credits, `stripe_purchase:${tier ?? 'unknown'}`, session.id)
-        console.log(`✓ +${credits} credits für ${userId} (session ${session.id})`)
         break
       }
 

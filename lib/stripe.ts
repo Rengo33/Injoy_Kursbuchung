@@ -1,6 +1,7 @@
 import Stripe from 'stripe'
+import { CONFIG } from './config'
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '', {
+export const stripe = new Stripe(CONFIG.STRIPE_SECRET_KEY, {
   apiVersion: '2026-03-25.dahlia',
   typescript: true,
 })
@@ -21,8 +22,6 @@ export interface TierConfig extends TierDisplay {
   priceId: string
 }
 
-// Einzige Source-of-Truth für Tier-Anzeige; in lib/stripe.ts damit Preise
-// nicht zwischen Client und Server driften können.
 export const TIER_DISPLAY: TierDisplay[] = [
   { id: 'single', name: 'Einzeln', credits: 1, priceLabel: '€ 1,99', desc: '1 Auto-Book' },
   { id: 'bundle', name: 'Bündel', credits: 10, priceLabel: '€ 14,90', priceNote: '· 25 % sparen', desc: '10 Auto-Bookings', featured: true },
@@ -30,9 +29,9 @@ export const TIER_DISPLAY: TierDisplay[] = [
 ]
 
 const PRICE_IDS: Record<TierId, string> = {
-  single: process.env.STRIPE_PRICE_SINGLE ?? '',
-  bundle: process.env.STRIPE_PRICE_BUNDLE ?? '',
-  unlimited: process.env.STRIPE_PRICE_UNLIMITED ?? '',
+  single: CONFIG.STRIPE_PRICE_SINGLE,
+  bundle: CONFIG.STRIPE_PRICE_BUNDLE,
+  unlimited: CONFIG.STRIPE_PRICE_UNLIMITED,
 }
 
 export const TIERS: TierConfig[] = TIER_DISPLAY.map(t => ({ ...t, priceId: PRICE_IDS[t.id] }))

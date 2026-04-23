@@ -5,6 +5,7 @@ import { consumeCredit, refundCredit } from '@/lib/credits'
 import { supabaseServer } from '@/lib/supabase/server'
 import { BookingStatus, type BookingStatus as Status } from '@/lib/booking-status'
 import { formatBerlinDateTime } from '@/lib/datum'
+import { CONFIG } from '@/lib/config'
 
 interface Payload extends BuchungsData {
   autoBook?: boolean
@@ -49,14 +50,14 @@ async function recordBooking(args: RecordArgs) {
 }
 
 async function scheduleViaQstash(data: Payload, diffMs: number): Promise<string | null> {
-  const qstashUrl = `https://qstash.upstash.io/v2/publish/${process.env.APP_URL}/api/buchen/execute`
+  const qstashUrl = `https://qstash.upstash.io/v2/publish/${CONFIG.APP_URL}/api/buchen/execute`
   const response = await fetch(qstashUrl, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${process.env.QSTASH_TOKEN}`,
+      'Authorization': `Bearer ${CONFIG.QSTASH_TOKEN}`,
       'Content-Type': 'application/json',
       'Upstash-Delay': `${Math.floor(diffMs / 1000)}s`,
-      'Upstash-Forward-x-scheduler-secret': process.env.SCHEDULER_SECRET || '',
+      'Upstash-Forward-x-scheduler-secret': CONFIG.SCHEDULER_SECRET,
     },
     body: JSON.stringify(data),
   })

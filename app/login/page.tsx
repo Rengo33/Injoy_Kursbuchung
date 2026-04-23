@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { supabaseBrowser } from '@/lib/supabase/client'
+import { BackToCoursesLink } from '@/components/BackToCoursesLink'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -57,7 +57,7 @@ export default function LoginPage() {
           ) : (
             <>
               <h3>Magic <em>Link</em></h3>
-              <p style={{ marginBottom: 16 }}>
+              <p className="login-intro">
                 Gib deine E-Mail ein — wir schicken dir einen Link zum Einloggen.
                 Kein Passwort nötig.
               </p>
@@ -126,7 +126,7 @@ export default function LoginPage() {
           )}
         </div>
 
-        <Link href="/" className="back-link">← Zurück zum Kursplan</Link>
+        <BackToCoursesLink />
       </div>
     </main>
   )

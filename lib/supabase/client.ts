@@ -2,20 +2,17 @@
 
 import { createBrowserClient } from '@supabase/ssr'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { CONFIG } from '../config'
 
 let cached: SupabaseClient | undefined
 
 /**
- * Singleton-Browser-Client. WICHTIG: nur eine Instanz pro Tab erzeugen,
- * sonst streiten sich mehrere GoTrueClient-Instanzen um den Auth-Lock
- * ("Lock was released because another request stole it").
+ * Nur eine Instanz pro Tab — sonst streiten sich mehrere GoTrueClients
+ * um den Auth-Lock ("lock was released because another request stole it").
  */
 export function supabaseBrowser(): SupabaseClient {
   if (!cached) {
-    cached = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    cached = createBrowserClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY)
   }
   return cached
 }

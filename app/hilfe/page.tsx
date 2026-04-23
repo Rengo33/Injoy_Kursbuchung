@@ -1,5 +1,5 @@
 import { SimpleShell } from '@/components/SimpleShell'
-import Link from 'next/link'
+import { BackToCoursesLink } from '@/components/BackToCoursesLink'
 
 export default function Hilfe() {
   return (
@@ -44,7 +44,7 @@ export default function Hilfe() {
         </p>
       </div>
 
-      <Link href="/" className="back-link">← Zurück zum Kursplan</Link>
+      <BackToCoursesLink />
     </SimpleShell>
   )
 }

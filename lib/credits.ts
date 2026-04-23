@@ -1,5 +1,6 @@
 import { CONFIG } from './config'
 import { supabaseAdmin } from './supabase/admin'
+import { supabaseServer } from './supabase/server'
 
 export interface CreditStatus {
   credits: number
@@ -31,7 +32,8 @@ export async function getCreditStatus(userId: string | null): Promise<CreditStat
   if (CONFIG.FREE_MODE) return makeFreeStatus()
   if (!userId) return makeEmptyStatus()
 
-  const supa = supabaseAdmin()
+  // User-scoped Client — RLS setzt auth.uid()=user_id durch.
+  const supa = supabaseServer()
   const { data } = await supa
     .from('credit_balance')
     .select('credits')

@@ -10,13 +10,11 @@ export async function requireUser(): Promise<RequireUserResult> {
   const supabase = supabaseServer()
   const { data } = await supabase.auth.getUser()
   if (!data.user) {
-    return {
-      ok: false,
-      response: NextResponse.json(
-        { success: false, error: 'Nicht eingeloggt' },
-        { status: 401 }
-      ),
-    }
+    return { ok: false, response: errorResponse('Nicht eingeloggt', 401) }
   }
   return { ok: true, user: data.user, supabase }
+}
+
+export function errorResponse(message: string, status = 500): NextResponse {
+  return NextResponse.json({ success: false, error: message }, { status })
 }
