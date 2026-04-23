@@ -28,17 +28,21 @@ export default function Home() {
   const { credits } = useCredits()
   const [kategorie, setKategorie] = useState<Kategorie>('alle')
 
-  const heute = useMemo(() => new Date(), [])
-  const morgen = useMemo(() => {
-    const m = new Date()
-    m.setDate(m.getDate() + 1)
-    return m
-  }, [])
-
-  const [selectedDatum, setSelectedDatum] = useState<string>(() => formatDatum(morgen))
-  const [viewYear, setViewYear] = useState<number>(heute.getFullYear())
-  const [viewMonth, setViewMonth] = useState<number>(heute.getMonth())
+  // Initial auf null — sonst hätten Server (UTC) und Client (lokale TZ)
+  // verschiedene Werte und Next würde beim Hydrieren crashen.
+  const [selectedDatum, setSelectedDatum] = useState<string | null>(null)
+  const [viewYear, setViewYear] = useState<number | null>(null)
+  const [viewMonth, setViewMonth] = useState<number | null>(null)
   const [modal, setModal] = useState<ModalState | null>(null)
+
+  useEffect(() => {
+    const now = new Date()
+    const morgen = new Date(now)
+    morgen.setDate(morgen.getDate() + 1)
+    setSelectedDatum(formatDatum(morgen))
+    setViewYear(now.getFullYear())
+    setViewMonth(now.getMonth())
+  }, [])
 
   const ladeKurse = useCallback(async () => {
     setLoading(true)
@@ -74,7 +78,10 @@ export default function Home() {
     [tagesKurse]
   )
 
-  const selectedDate = useMemo(() => parseDatum(selectedDatum), [selectedDatum])
+  const selectedDate = useMemo(
+    () => selectedDatum ? parseDatum(selectedDatum) : null,
+    [selectedDatum]
+  )
   const wochentag = selectedDate ? WOCHENTAGE_LANG[selectedDate.getDay()] : ''
   const tagTitel = selectedDate
     ? `${selectedDate.getDate()}. ${monatName(selectedDate.getMonth())}`
@@ -82,11 +89,13 @@ export default function Home() {
   const kw = selectedDate ? kwNummer(selectedDate) : null
 
   const prevMonat = () => {
+    if (viewYear === null || viewMonth === null) return
     const d = new Date(viewYear, viewMonth - 1, 1)
     setViewYear(d.getFullYear())
     setViewMonth(d.getMonth())
   }
   const nextMonat = () => {
+    if (viewYear === null || viewMonth === null) return
     const d = new Date(viewYear, viewMonth + 1, 1)
     setViewYear(d.getFullYear())
     setViewMonth(d.getMonth())
@@ -98,6 +107,12 @@ export default function Home() {
 
   const closeModal = () => setModal(null)
   const onSuccess = () => { setModal(null); ladeKurse() }
+
+  // Erster Client-Render vor der Date-Initialisierung im Effect —
+  // leeres App-Shell, damit SSR/CSR identisch sind.
+  if (selectedDatum === null || viewYear === null || viewMonth === null) {
+    return <div className="app" />
+  }
 
   return (
     <div className="app">
